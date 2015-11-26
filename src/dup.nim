@@ -8,6 +8,7 @@ Usage:
   dup status
   dup build [--no-cache]
   dup bash [web | db]
+  dup sql
   dup (-h | --help)
   dup --version
 """
@@ -185,3 +186,12 @@ if args["bash"]:
   # Default case
   echo("Error: You must specify which container: \"dup bash web\" or \"dup bash db\"")
   quit(250)
+
+if args["sql"]:
+  case config["db"]["type"].getStr():
+  of "mysql":
+    discard execCmd("docker exec -it " & config["project"].getStr() & "-db mysql")
+    quit(0)
+  else:
+    echo("Not implemented yet.")
+    quit(252)

@@ -46,6 +46,9 @@ proc checkDockerfile() =
 proc checkStatefile(): bool =
   return existsFile(getCurrentDir() / stateFile)
 
+proc buildStatefile() =
+  open(getCurrentDir() / stateFile, fmWrite).close()
+
 # Check our Dockerfile and .up.json files exist
 checkDockerfile()
 let config = checkDupFile()
@@ -58,12 +61,24 @@ let config = checkDupFile()
 if args["init"]:
   if checkStateFile():
     echo("Error: Docker Up has already been initalised.")
-    echo("\nTo rebuild the data-volume container, remove the " & config["project"].getStr() & "-data container, and delete the .up.state file.")
+    echo("To rebuild the data-volume container, remove the " & config["project"].getStr() & "-data container, and delete the .up.state file.")
     quit(253)
 
   case config["db"]["type"].getStr():
   of "mysql":
     echo("Initialising MySQL volume-only container...")
+    let command = "docker run -d -v /var/lib/mysql --name " & config["project"].getStr() & "-data --entrypoint /bin/echo tutum/mysql"
+    let (output, exitCode) = execCmdEx command
+
+    case exitCode:
+    of 0:
+      buildStateFile()
+      echo("Done.")
+      quit(0)
+    else:
+      echo("An error occurred!\n\nSee the following for details:\n" & output)
+      quit(exitCode)
+
   else:
     echo("Error: Invalid database type specified in config.")
     quit(252)

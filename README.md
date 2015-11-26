@@ -4,13 +4,13 @@
 Declaratively define and run stateful Docker containers for web development.
 
 Usage:
-  dup up                  (Starts the containers)
-  dup down                (Stops and removes the containers)
-  dup init                (Initialises the "-data" container)
-  dup status              (Not yet implemented)
-  dup build [--no-cache]  (Builds the web container's image)
-  dup (-h | --help)
-  dup --version
+  dup up                   Starts the containers
+  dup down                 Stops and removes the containers
+  dup init                 Initialises the "-data" container
+  dup status               Not yet implemented
+  dup build [--no-cache]   Builds the web container's image
+  dup (-h | --help)        Prints this help message
+  dup --version            Prints the installed version
 ```
 
 `dup` is a tiny wrapper over Docker that loads a declarative JSON file for a given project to manage containers (especially stateful database containers) in a sane way. It was borne out of frustration with [docker-compose]() and it's issues with volume-only containers: a prerequisite for easy local web development. Three containers are created, prefixed with your declared project name (no defaulting to folder names here!): `-web`, `-db` and `-data`.

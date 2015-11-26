@@ -1,0 +1,5 @@
+# Nim build cache
+nimcache
+
+# Built binaries
+/build

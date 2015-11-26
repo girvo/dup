@@ -73,7 +73,7 @@ proc startMysql(project: string, dbname: string, dbpass: string) =
     echo("Error: Starting MySQL failed. Check the output above.")
 
 proc startWeb(project: string) =
-  echo "\nStarting web server..."
+  echo "Starting web server..."
   let command = "docker run -d --name " & project & "-web -p 80:80 -v $(pwd)/code:/var/www --link " & project & "-db:db " & project & ":latest"
   let exitCode = execCmd command
   if exitCode != 0:
@@ -106,7 +106,7 @@ if args["init"]:
       echo("Done.")
       quit(0)
     else:
-      echo("An error occurred!\n\nSee the following for details:\n" & output)
+      echo("An error occurred!See the following for details:" & output)
       quit(exitCode)
   else:
     echo("Error: Invalid database type specified in config.")

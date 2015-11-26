@@ -24,23 +24,23 @@ const stateFile = ".up.state"
 
 proc checkDupFile(): JsonNode =
   if not existsFile(getCurrentDir() / dupFile):
-    echo("Missing \".up.json\" in current directory.")
+    echo("Error: Missing \".up.json\" in current directory.")
     quit(255)
 
   let conf = json.parseFile(getCurrentDir() / dupFile)
   if not conf.hasKey("project"):
-    echo("Your \".up.json\" file is missing the \"project\" key.")
+    echo("Error: Your \".up.json\" file is missing the \"project\" key.")
     quit(252)
   if not conf.hasKey("db"):
-    echo("Your \".up.json\" file is missing the \"db\" key.")
+    echo("Error: Your \".up.json\" file is missing the \"db\" key.")
     quit(252)
   if not conf["db"].hasKey("type"):
-    echo("Missing \"type\" key in \"db\".")
+    echo("Error: Missing \"type\" key in \"db\".")
   return conf
 
 proc checkDockerfile() =
   if not existsFile(getCurrentDir() / "Dockerfile"):
-    echo("Missing \"Dockerfile\" in current directory.")
+    echo("Error: Missing \"Dockerfile\" in current directory.")
     quit(254)
 
 proc checkStatefile(): bool =
@@ -57,7 +57,7 @@ let config = checkDupFile()
 
 if args["init"]:
   if checkStateFile():
-    echo("Docker Up has already been initalised.")
+    echo("Error: Docker Up has already been initalised.")
     echo("\nTo rebuild the data-volume container, remove the " & config["project"].getStr() & "-data container, and delete the .up.state file.")
     quit(253)
 
@@ -65,7 +65,7 @@ if args["init"]:
   of "mysql":
     echo("Initialising MySQL volume-only container...")
   else:
-    echo("Invalid database type specified in config.")
+    echo("Error: Invalid database type specified in config.")
     quit(252)
   quit(0)
 

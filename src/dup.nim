@@ -156,9 +156,18 @@ if args["down"]:
 
 if args["build"]:
   echo("Building latest image...")
-  let command = "docker build -t " & config["project"].getStr() & ":latest ."
+  var command = ""
+  if args["--no-cache"]:
+    command = "docker build --no-cache -t " & config["project"].getStr() & ":latest ."
+  else:
+    command = "docker build -t " & config["project"].getStr() & ":latest ."
+
   let exitCode = execCmd(command)
   if exitCode != 0:
     quit(exitCode)
   echo("Done.")
+  quit(0)
+
+if args["status"]:
+  echo("Yet to be implemented.")
   quit(0)

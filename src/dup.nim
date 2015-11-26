@@ -115,7 +115,9 @@ if args["init"]:
 
 if args["up"]:
   if not checkStatefile():
+    echo("Error: Docker Up has not been initialised. Run \"dup init\".")
     quit(252)
+
   case config["db"]["type"].getStr():
   of "mysql":
     startMysql(config["project"].getStr(), config["db"]["name"].getStr(), config["db"]["pass"].getStr())
@@ -127,7 +129,29 @@ if args["up"]:
 
 if args["down"]:
   if not checkStatefile():
+    echo("Error: Docker Up has not been initialised. Run \"dup init\".")
     quit(252)
+
+  echo("Stopping and removing running containers...")
+  var
+    stopWeb = "docker stop " & config["project"].getStr() & "-web"
+    stopDb = "docker stop " & config["project"].getStr() & "-db"
+    rmWeb = "docker rm " & config["project"].getStr() & "-web"
+    rmDb = "docker rm " & config["project"].getStr() & "-db"
+
+  echo("Stopping web server..")
+  discard execCmd(stopWeb)
+
+  echo("Stopping database...")
+  discard execCmd(stopDb)
+
+  echo("Removing web server...")
+  discard execCmd(rmWeb)
+
+  echo("Removing database...")
+  discard execCmd(rmDb)
+
+  echo("Done.")
   quit(0)
 
 if args["build"]:

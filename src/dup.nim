@@ -7,6 +7,7 @@ Usage:
   dup init
   dup status
   dup build [--no-cache]
+  dup bash [web | db]
   dup (-h | --help)
   dup --version
 """
@@ -171,3 +172,16 @@ if args["build"]:
 if args["status"]:
   echo("Yet to be implemented.")
   quit(0)
+
+if args["bash"]:
+  if args["web"]:
+    echo("Entering web server container...")
+    discard execCmd("docker exec -it " & config["project"].getStr() & "-web bash")
+    quit(0)
+  if args["db"]:
+    echo("Entering database container...")
+    discard execCmd("docker exec -it " & config["project"].getStr() & "-db bash")
+    quit(0)
+  # Default case
+  echo("Error: You must specify which container: \"dup bash web\" or \"dup bash db\"")
+  quit(250)

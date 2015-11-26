@@ -43,3 +43,7 @@ The database user that is setup by default under `tutum/mysql` is `admin`, and t
 ## Building
 
 You'll need `make`, `nim` and it's package manager `nimble`. Clone the repository, run `nimble install`, and then `make`. The binary will be in `./build`.
+
+## License
+
+MIT. See [LICENSE.md](/LICENSE.md) for details.

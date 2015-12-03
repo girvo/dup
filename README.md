@@ -38,16 +38,16 @@ All optional configs are keys on the top level config object.
 Specify a Dockerfile (other than the root `Dockerfile`):
 
 ```json
-    "dockerfile": "Dockerfile.local"
+"dockerfile": "Dockerfile.local"
 ```
 
 Specify environment variables for the web container:
 
 ```json
-    "env": {
-        "KEY_ONE": "valueOne",
-        "KEY_TWO": "valueTwo"
-    }
+"env": {
+    "KEY_ONE": "valueOne",
+    "KEY_TWO": "valueTwo"
+}
 ```
 
 ## Code

@@ -22,6 +22,7 @@ In the root of your project, next to the `Dockerfile`, you will need a JSON file
 ```json
 {
     "project": "project-name-here",
+    "port": "<host>:<container>",
     "db": {
         "type": "mysql-or-postgres",
         "name": "database-name",
@@ -39,6 +40,14 @@ Your code is mounted as a volume into the `-web` container from the `code/` dire
 Currently, `dup` only handles MySQL, using the [tutum/mysql:latest](https://github.com/tutumcloud/mysql) Docker image. In the very near future (as at Nov 2015), PostgreSQL will also be supported. Persistence of your database is handled by leveraging a "volume-only" container, which ensures that your database persists across destruction of the container. To completely destroy your database, remove the `.up.state` file and `docker rm` the `-data` container.
 
 The database user that is setup by default under `tutum/mysql` is `admin`, and the password for that user is declared in `.up.json`.
+
+Alternatively, to not use a database, set the `db` object to:
+
+```json
+"db": {
+  "type": "none"
+}
+```
 
 ## Building
 

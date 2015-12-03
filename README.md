@@ -22,7 +22,7 @@ In the root of your project, next to the `Dockerfile`, you will need a JSON file
 ```json
 {
     "project": "project-name-here",
-    "port": "<host>:<container>",
+    "port": "host:container",
     "db": {
         "type": "mysql-or-postgres",
         "name": "database-name",

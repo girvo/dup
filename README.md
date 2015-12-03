@@ -31,6 +31,25 @@ In the root of your project, next to the `Dockerfile`, you will need a JSON file
 }
 ```
 
+### Optional config
+
+All optional configs are keys on the top level config object.
+
+Specify a Dockerfile (other than the root `Dockerfile`):
+
+```json
+    "dockerfile": "Dockerfile.local"
+```
+
+Specify environment variables for the web container:
+
+```json
+    "env": {
+        "KEY_ONE": "valueOne",
+        "KEY_TWO": "valueTwo"
+    }
+```
+
 ## Code
 
 Your code is mounted as a volume into the `-web` container from the `code/` directory in the root of your project. This can be any language, though PHP and Node.js are the most tested at this point in time, with the `studionone/apache-php5:base` and `studionone/nginx-php5:base` base images.

@@ -24,23 +24,50 @@ let args = docopt(doc, version = "Docker Up v0.2.0")
 const dupFile = ".up.json"
 const stateFile = ".up.state"
 
+proc errMissingKey(key: string, shouldQuit: bool = false) =
+  echo("Error: Your \".up.json\" file is missing the \"" & key & "\" key.")
+  if shouldQuit: quit(252)
+
+proc errMissingKey(key: string, ctx: string, shouldQuit: bool = false) =
+  echo("Error: Missing \"" & key & "\" key in \"" & ctx & "\".")
+  if shouldQuit: quit(251)
+
 proc checkDupFile(): JsonNode =
   if not existsFile(getCurrentDir() / dupFile):
     echo("Error: Missing \".up.json\" in current directory.")
     quit(255)
-
   let conf = json.parseFile(getCurrentDir() / dupFile)
   if not conf.hasKey("project"):
-    echo("Error: Your \".up.json\" file is missing the \"project\" key.")
-    quit(252)
+    errMissingKey("project", true)
   if not conf.hasKey("port"):
-    echo("Error: Your \".up.json\" file is missing the \"port\" key.")
-    quit(252)
+    errMissingKey("port", true)
   if not conf.hasKey("db"):
-    echo("Error: Your \".up.json\" file is missing the \"db\" key.")
-    quit(252)
+    errMissingKey("db", true)
   if not conf["db"].hasKey("type"):
-    echo("Error: Missing \"type\" key in \"db\".")
+    errMissingKey("type", "db", true)
+  case conf["db"]["type"].getStr():
+  of "mysql":
+    if not conf["db"].hasKey("name"):
+      errMissingKey("name", "db", true)
+    if not conf["db"].hasKey("pass"):
+      errMissingkey("pass", "db", true)
+  of "postgres":
+    var shouldQuit = false
+    if not conf["db"].hasKey("name"):
+      errMissingKey("name", "db")
+      shouldQuit = true
+    if not conf["db"].hasKey("user"):
+      errMissingKey("user", "db")
+      shouldQuit = true
+    if not conf["db"].hasKey("pass"):
+      errMissingkey("pass", "db")
+      shouldQuit = true
+    if shouldQuit: quit(251)
+  of "none":
+    discard
+  else:
+    echo("Error: Invalid \"type\" key in \"db\" object.")
+    quit(251)
   return conf
 
 proc checkDockerfile() =
@@ -76,10 +103,26 @@ proc startMysql(project: string, dbname: string, dbpass: string) =
   let exitCode = execCmd command
   if exitCode != 0:
     echo("Error: Starting MySQL failed. Check the output above.")
+    quit(exitCode)
 
-proc startWeb(project: string, portMapping: string, hasDB: bool = true) =
+proc startPostgres(project: string, dbname: string, dbuser: string, dbpass: string) =
+  echo "Starting Postgres..."
+  let command = "docker run -d --name " & project & "-db --volumes-from " & project & "-data -p 5432:5432 -e DB_PASS=" & dbpass & " -e DB_NAME=" & dbname & " -e DB_USER=" & dbuser & " sameersbn/postgresql"
+  let exitCode = execCmd command
+  if exitCode != 0:
+    echo("Error: Starting Postgres failed. Check the output above.")
+    quit(exitCode)
+
+proc buildEnv(envDict: JsonNode): string =
+  var env = ""
+  for k, v in json.pairs(envDict):
+    env = env & "-e " & $k & "=" & $v & " "
+  return env
+
+proc startWeb(project: string, portMapping: string, env: JsonNode, hasDB: bool = true) =
   echo "Starting web server..."
   let
+    env = buildEnv(env)
     link = if hasDB: "--link " & project & "-db:db "
                else: ""
     command = "docker run -d --name " & project & "-web -p " & portMapping & " -v $(pwd)/code:/var/www " & link & project & ":latest"
@@ -104,17 +147,28 @@ if args["init"]:
   case config["db"]["type"].getStr():
   of "mysql":
     echo("Initialising MySQL volume-only container...")
-    let command = "docker run -d -v /var/lib/mysql --name " & config["project"].getStr() & "-data --entrypoint /bin/echo tutum/mysql"
-    let (output, exitCode) = execCmdEx command
-
-    case exitCode:
-    of 0:
+    let
+      command = "docker run -d -v /var/lib/mysql --name " & config["project"].getStr() & "-data --entrypoint /bin/echo tutum/mysql"
+      exitCode = execCmd command
+    if exitCode != 0:
+      echo("Error: An error occurred while creating the volume-only container. See the above output for details.")
+      quit(exitCode)
+    else:
       buildStateFile()
       echo("Done.")
       quit(0)
-    else:
-      echo("An error occurred!See the following for details:" & output)
+  of "postgres":
+    echo("Initialising Postgres volume-only container...")
+    let
+      command = "docker run -d -v /var/lib/postgres/data --name " & config["project"].getStr() & "-data --entrypoint /bin/echo sameersbn/postgresql"
+      exitCode = execCmd command
+    if exitCode != 0:
+      echo("Error: An error occurred while creating the volume-only container. See the above output for details.")
       quit(exitCode)
+    else:
+      buildStateFile()
+      echo("Done.")
+      quit(0)
   of "none":
     echo("No database requested. If you change this in the future, you will need to reinitialise your dup project.")
     buildStateFile()
@@ -132,14 +186,21 @@ if args["up"]:
     echo("Error: Docker Up has not been initialised. Run \"dup init\".")
     quit(252)
 
+  # Handles getting the env object
+  var envDict = json.parseJson("{}")
+  if config.hasKey("env"): envDict = config["env"]
+
   case config["db"]["type"].getStr():
   of "mysql":
     startMysql(config["project"].getStr(), config["db"]["name"].getStr(), config["db"]["pass"].getStr())
-    startWeb(project = config["project"].getStr(), portMapping = config["port"].getStr(), hasDB = true)
+    startWeb(project = config["project"].getStr(), portMapping = config["port"].getStr(), env = envDict, hasDB = true)
+  of "postgres":
+    startPostgres(config["project"].getStr(), config["db"]["name"].getStr(), config["db"]["user"].getStr(), config["db"]["pass"].getStr())
+    startWeb(project = config["project"].getStr(), portMapping = config["port"].getStr(), env = envDict, hasDB = true)
   of "none":
-    startWeb(project = config["project"].getStr(), portMapping = config["port"].getStr(), hasDB = false)
+    startWeb(project = config["project"].getStr(), portMapping = config["port"].getStr(), env = envDict, hasDB = false)
   else:
-    echo("Not implemented yet.")
+    echo("Error: Invalid database type specified.")
     quit(252)
   quit(0)
 
@@ -174,11 +235,14 @@ if args["down"]:
 
 if args["build"]:
   echo("Building latest image...")
+  var df = ""
+  if config.hasKey("dockerfile"): df = "-f " & config["dockerfile"].getStr()
+
   var command = ""
   if args["--no-cache"]:
-    command = "docker build --no-cache -t " & config["project"].getStr() & ":latest ."
+    command = "docker build --no-cache " & df & " -t " & config["project"].getStr() & ":latest ."
   else:
-    command = "docker build -t " & config["project"].getStr() & ":latest ."
+    command = "docker build " & df & " -t " & config["project"].getStr() & ":latest ."
 
   let exitCode = execCmd(command)
   if exitCode != 0:
@@ -210,6 +274,9 @@ if args["sql"]:
   case config["db"]["type"].getStr():
   of "mysql":
     discard execCmd("docker exec -it " & config["project"].getStr() & "-db mysql")
+    quit(0)
+  of "postgres":
+    discard execCmd("docker exec -it " & config["project"].getStr() & "-db psql")
     quit(0)
   else:
     echo("Not implemented yet.")

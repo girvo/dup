@@ -68,6 +68,12 @@ Alternatively, to not use a database, set the `db` object to:
 }
 ```
 
+## Troubleshooting
+
+### OSX: `could not import: pcre_free_study`
+
+You'll need to install a newer version of the `pcre` library: `brew install pcre` should fix this issue.
+
 ## Building
 
 ### OS X

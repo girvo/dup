@@ -33,6 +33,9 @@ proc checkDupFile(): JsonNode =
   if not conf.hasKey("project"):
     echo("Error: Your \".up.json\" file is missing the \"project\" key.")
     quit(252)
+  if not conf.hasKey("port"):
+    echo("Error: Your \".up.json\" file is missing the \"port\" key.")
+    quit(252)
   if not conf.hasKey("db"):
     echo("Error: Your \".up.json\" file is missing the \"db\" key.")
     quit(252)
@@ -69,22 +72,24 @@ proc buildStatefile() =
 
 proc startMysql(project: string, dbname: string, dbpass: string) =
   echo "Starting MySQL..."
-  let command = "docker run -d --name " & project & "-db --volumes-from " & project & "-data -p 3306:3306 -e MYSQL_PASS=" & dbpass & " -e ON_CREATE_DB=" & dbname & " tutum/mysql"
+  let command = "docker run -d --name " & project & "-db --volumes-from " & project & "-data -p 3306:3306 -e VIRTUAL_HOST=" & project & ".docker -e MYSQL_PASS=" & dbpass & " -e ON_CREATE_DB=" & dbname & " tutum/mysql"
   let exitCode = execCmd command
   if exitCode != 0:
     echo("Error: Starting MySQL failed. Check the output above.")
 
-proc startWeb(project: string) =
+proc startWeb(project: string, portMapping: string, hasDB: bool = true) =
   echo "Starting web server..."
-  let command = "docker run -d --name " & project & "-web -p 80:80 -v $(pwd)/code:/var/www --link " & project & "-db:db " & project & ":latest"
-  let exitCode = execCmd command
+  let
+    link = if hasDB: "--link " & project & "-db:db "
+               else: ""
+    command = "docker run -d --name " & project & "-web -p " & portMapping & " -v $(pwd)/code:/var/www " & link & project & ":latest"
+    exitCode = execCmd command
   if exitCode != 0:
     echo("Error: Starting web server failed. Check the output above.")
 
 # Check our Dockerfile and .up.json files exist
 checkDockerfile()
 let config = checkDupFile()
-
 
 ###
 # Command definitions
@@ -110,11 +115,18 @@ if args["init"]:
     else:
       echo("An error occurred!See the following for details:" & output)
       quit(exitCode)
+  of "none":
+    echo("No database requested. If you change this in the future, you will need to reinitialise your dup project.")
+    buildStateFile()
+    quit(0)
   else:
     echo("Error: Invalid database type specified in config.")
     quit(252)
   quit(0)
 
+###
+# dup up
+##
 if args["up"]:
   if not checkStatefile():
     echo("Error: Docker Up has not been initialised. Run \"dup init\".")
@@ -123,7 +135,9 @@ if args["up"]:
   case config["db"]["type"].getStr():
   of "mysql":
     startMysql(config["project"].getStr(), config["db"]["name"].getStr(), config["db"]["pass"].getStr())
-    startWeb(config["project"].getStr())
+    startWeb(project = config["project"].getStr(), portMapping = config["port"].getStr(), hasDB = true)
+  of "none":
+    startWeb(project = config["project"].getStr(), portMapping = config["port"].getStr(), hasDB = false)
   else:
     echo("Not implemented yet.")
     quit(252)
@@ -144,14 +158,16 @@ if args["down"]:
   echo("Stopping web server..")
   discard execCmd(stopWeb)
 
-  echo("Stopping database...")
-  discard execCmd(stopDb)
+  if config["db"]["type"].getStr() != "none":
+    echo("Stopping database...")
+    discard execCmd(stopDb)
 
   echo("Removing web server...")
   discard execCmd(rmWeb)
 
-  echo("Removing database...")
-  discard execCmd(rmDb)
+  if config["db"]["type"].getStr() != "none":
+    echo("Removing database...")
+    discard execCmd(rmDb)
 
   echo("Done.")
   quit(0)
@@ -180,6 +196,9 @@ if args["bash"]:
     discard execCmd("docker exec -it " & config["project"].getStr() & "-web bash")
     quit(0)
   if args["db"]:
+    if config["db"]["type"].getStr() == "none":
+      echo("No database container exists for this project.")
+      quit(0)
     echo("Entering database container...")
     discard execCmd("docker exec -it " & config["project"].getStr() & "-db bash")
     quit(0)

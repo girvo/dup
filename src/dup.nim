@@ -125,7 +125,7 @@ proc startWeb(project: string, portMapping: string, env: JsonNode, hasDB: bool =
     env = buildEnv(env)
     link = if hasDB: "--link " & project & "-db:db "
                else: ""
-    command = "docker run -d --name " & project & "-web -p " & portMapping & " -v $(pwd)/code:/var/www " & link & project & ":latest"
+    command = "docker run -d --name " & project & "-web -p " & portMapping & " " & env & " -v $(pwd)/code:/var/www " & link & project & ":latest"
     exitCode = execCmd command
   if exitCode != 0:
     echo("Error: Starting web server failed. Check the output above.")

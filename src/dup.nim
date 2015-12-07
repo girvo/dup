@@ -119,13 +119,13 @@ proc buildEnv(envDict: JsonNode): string =
     env = env & "-e " & $k & "=" & $v & " "
   return env
 
-proc startWeb(project: string, portMapping: string, env: JsonNode, hasDB: bool = true) =
+proc startWeb(project: string, portMapping: string, folderMapping: string = "", env: JsonNode, hasDB: bool = true) =
   echo "Starting web server..."
   let
     env = buildEnv(env)
-    link = if hasDB: "--link " & project & "-db:db "
-               else: ""
-    command = "docker run -d --name " & project & "-web -p " & portMapping & " " & env & " -v $(pwd)/code:/var/www " & link & project & ":latest"
+    link = if hasDB: "--link " & project & "-db:db " else: ""
+    folder = if folderMapping == "": "-v $PWD/code:/var/www " else: "-v $PWD/" & folderMapping & " "
+    command = "docker run -d --name " & project & "-web -p " & portMapping & " " & env & folder & link & project & ":latest"
     exitCode = execCmd command
   if exitCode != 0:
     echo("Error: Starting web server failed. Check the output above.")
@@ -190,15 +190,19 @@ if args["up"]:
   var envDict = json.parseJson("{}")
   if config.hasKey("env"): envDict = config["env"]
 
+  # Handles folder mapping
+  var folderMapping = ""
+  if config.hasKey("volume"): folderMapping = config["volume"].getStr()
+
   case config["db"]["type"].getStr():
   of "mysql":
     startMysql(config["project"].getStr(), config["db"]["name"].getStr(), config["db"]["pass"].getStr())
     startWeb(project = config["project"].getStr(), portMapping = config["port"].getStr(), env = envDict, hasDB = true)
   of "postgres":
     startPostgres(config["project"].getStr(), config["db"]["name"].getStr(), config["db"]["user"].getStr(), config["db"]["pass"].getStr())
-    startWeb(project = config["project"].getStr(), portMapping = config["port"].getStr(), env = envDict, hasDB = true)
+    startWeb(project = config["project"].getStr(), portMapping = config["port"].getStr(), folderMapping = folderMapping, env = envDict, hasDB = true)
   of "none":
-    startWeb(project = config["project"].getStr(), portMapping = config["port"].getStr(), env = envDict, hasDB = false)
+    startWeb(project = config["project"].getStr(), portMapping = config["port"].getStr(), folderMapping = folderMapping, env = envDict, hasDB = false)
   else:
     echo("Error: Invalid database type specified.")
     quit(252)

@@ -125,7 +125,7 @@ proc startWeb(project: string, portMapping: string, folderMapping: string = "", 
     env = buildEnv(env)
     link = if hasDB: "--link " & project & "-db:db " else: ""
     folder = if folderMapping == "": "-v $PWD/code:/var/www " else: "-v $PWD/" & folderMapping & " "
-    command = "docker run -d --name " & project & "-web -p " & portMapping & " " & env & folder & link & "-e VIRTUAL_HOST=" & project & ".docker " & project & ":latest"
+    command = "docker run -d --name " & project & "-web -p " & portMapping & " " & env & folder & link & " -e TERM=xterm-256color -e VIRTUAL_HOST=" & project & ".docker " & project & ":latest"
     exitCode = execCmd command
   if exitCode != 0:
     echo("Error: Starting web server failed. Check the output above.")

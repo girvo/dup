@@ -46,8 +46,15 @@ Specify environment variables for the web container:
 ```json
 "env": {
     "KEY_ONE": "valueOne",
-    "KEY_TWO": "valueTwo"
+    "KEY_TWO": "valueTwo",
+    "VIRTUAL_HOST": "example.docker"
 }
+```
+
+Specify a different code directory volume map (host directory is automatically prepended with current directory). By default, this is set to `code:/var/www`:
+
+```json
+"volume": "relative-host-dir:/absolute/container/dir"
 ```
 
 ## Code

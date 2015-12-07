@@ -19,7 +19,7 @@ import strutils
 import json
 import docopt
 
-let args = docopt(doc, version = "Docker Up v0.3.1")
+let args = docopt(doc, version = "Docker Up v0.3.2")
 
 const dupFile = ".up.json"
 const stateFile = ".up.state"
@@ -99,7 +99,7 @@ proc buildStatefile() =
 
 proc startMysql(project: string, dbname: string, dbpass: string) =
   echo "Starting MySQL..."
-  let command = "docker run -d --name " & project & "-db --volumes-from " & project & "-data -p 3306:3306 -e VIRTUAL_HOST=" & project & ".docker -e MYSQL_PASS=" & dbpass & " -e ON_CREATE_DB=" & dbname & " tutum/mysql"
+  let command = "docker run -d --name " & project & "-db --volumes-from " & project & "-data -p 3306:3306 -e MYSQL_PASS=" & dbpass & " -e ON_CREATE_DB=" & dbname & " tutum/mysql"
   let exitCode = execCmd command
   if exitCode != 0:
     echo("Error: Starting MySQL failed. Check the output above.")
@@ -125,7 +125,7 @@ proc startWeb(project: string, portMapping: string, folderMapping: string = "", 
     env = buildEnv(env)
     link = if hasDB: "--link " & project & "-db:db " else: ""
     folder = if folderMapping == "": "-v $PWD/code:/var/www " else: "-v $PWD/" & folderMapping & " "
-    command = "docker run -d --name " & project & "-web -p " & portMapping & " " & env & folder & link & project & ":latest"
+    command = "docker run -d --name " & project & "-web -p " & portMapping & " " & env & folder & link & "-e VIRTUAL_HOST=" & project & ".docker " & project & ":latest"
     exitCode = execCmd command
   if exitCode != 0:
     echo("Error: Starting web server failed. Check the output above.")

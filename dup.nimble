@@ -1,6 +1,6 @@
 [Package]
 name          = "dup"
-version       = "0.3.2"
+version       = "0.3.3"
 author        = "Josh Girvin <josh@jgirvin.com>"
 description   = "CLI wrapper for local Docker web development"
 license       = "MIT"

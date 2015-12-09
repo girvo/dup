@@ -19,7 +19,7 @@ import strutils
 import json
 import docopt
 
-let args = docopt(doc, version = "Docker Up v0.3.2")
+let args = docopt(doc, version = "Docker Up v0.3.3")
 
 const dupFile = ".up.json"
 const stateFile = ".up.state"
@@ -119,7 +119,7 @@ proc buildEnv(envDict: JsonNode): string =
     env = env & "-e " & $k & "=" & $v & " "
   return env
 
-proc startWeb(project: string, portMapping: string, folderMapping: string = "", env: JsonNode, hasDB: bool = true) =
+proc startWeb(project: string, portMapping: string, folderMapping: string, env: JsonNode, hasDB: bool = true) =
   echo "Starting web server..."
   let
     env = buildEnv(env)
@@ -197,7 +197,7 @@ if args["up"]:
   case config["db"]["type"].getStr():
   of "mysql":
     startMysql(config["project"].getStr(), config["db"]["name"].getStr(), config["db"]["pass"].getStr())
-    startWeb(project = config["project"].getStr(), portMapping = config["port"].getStr(), env = envDict, hasDB = true)
+    startWeb(project = config["project"].getStr(), portMapping = config["port"].getStr(), folderMapping = folderMapping, env = envDict, hasDB = true)
   of "postgres":
     startPostgres(config["project"].getStr(), config["db"]["name"].getStr(), config["db"]["user"].getStr(), config["db"]["pass"].getStr())
     startWeb(project = config["project"].getStr(), portMapping = config["port"].getStr(), folderMapping = folderMapping, env = envDict, hasDB = true)

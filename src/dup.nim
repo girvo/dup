@@ -19,7 +19,7 @@ import strutils
 import json
 import docopt
 
-let args = docopt(doc, version = "Docker Up v0.3.3")
+let args = docopt(doc, version = "Docker Up v0.3.4")
 
 const dupFile = ".up.json"
 const stateFile = ".up.state"
@@ -99,7 +99,7 @@ proc buildStatefile() =
 
 proc startMysql(project: string, dbname: string, dbpass: string) =
   echo "Starting MySQL..."
-  let command = "docker run -d --name " & project & "-db --volumes-from " & project & "-data -p 3306:3306 -e MYSQL_PASS=" & dbpass & " -e ON_CREATE_DB=" & dbname & " tutum/mysql"
+  let command = "docker run -d --name " & project & "-db --volumes-from " & project & "-data -e MYSQL_PASS=" & dbpass & " -e ON_CREATE_DB=" & dbname & " tutum/mysql"
   let exitCode = execCmd command
   if exitCode != 0:
     echo("Error: Starting MySQL failed. Check the output above.")
@@ -107,7 +107,7 @@ proc startMysql(project: string, dbname: string, dbpass: string) =
 
 proc startPostgres(project: string, dbname: string, dbuser: string, dbpass: string) =
   echo "Starting Postgres..."
-  let command = "docker run -d --name " & project & "-db --volumes-from " & project & "-data -p 5432:5432 -e DB_PASS=" & dbpass & " -e DB_NAME=" & dbname & " -e DB_USER=" & dbuser & " sameersbn/postgresql"
+  let command = "docker run -d --name " & project & "-db --volumes-from " & project & "-data -e DB_PASS=" & dbpass & " -e DB_NAME=" & dbname & " -e DB_USER=" & dbuser & " sameersbn/postgresql"
   let exitCode = execCmd command
   if exitCode != 0:
     echo("Error: Starting Postgres failed. Check the output above.")

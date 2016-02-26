@@ -2,8 +2,12 @@ NIM_OPTS=--parallelBuild:1
 APP_NAME=dup
 BIN_DIR=build
 SRC_DIR=src
+TEST_DIR=tests
 
 all: clean $(BIN_DIR)/$(APP_NAME)
+
+test: $(wildcard $SRC_DIR/**/*.nim)
+	nim c --run tests/runner.nim
 
 clean-linux:
 	rm -rf build/linux/linux

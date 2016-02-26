@@ -18,6 +18,7 @@ import osproc
 import strutils
 import json
 import docopt
+import docker
 
 let args = docopt(doc, version = "Docker Up v0.3.4")
 

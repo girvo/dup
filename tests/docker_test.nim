@@ -31,3 +31,7 @@ suite "docker":
     check(res.port == 0)
     check(res.host == "/var/run/docker.sock")
     check(res.kind == unix)
+
+  test "connectToHost":
+    docker.connectToHost(docker.getHost())
+    check(0 == 1)

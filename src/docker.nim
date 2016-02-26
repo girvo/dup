@@ -1,10 +1,16 @@
+## docker.nim
+## Core Docker API client library using TCP/Unix sockets
+## I'm stealing some of the ideas from this library:
+## https://github.com/je-nunez/Docker_API_in_BASH/blob/master/docker_low_level_library.sh
+
 import os
 import net
 import uri
 import strutils
 
 type
-  DockerHost* = tuple[scheme: string, host: string, port: int, kind: HostKind]
+  DockerHost* = tuple
+    [scheme: string, host: string, port: int, kind: HostKind]
   HostKind* = enum
     url, unix
 
@@ -32,6 +38,12 @@ proc getHost*(k: string = "DOCKER_HOST"): DockerHost =
   # Return our DockerHost tuple
   return (scheme: parsed.scheme, host: parsed.hostname, port: parseInt(parsed.port), kind: kind)
 
-# proc connect*(host: DockerHost) =
-#   var sock = newSocket($host)
-#   var conn = sock.connect()
+proc connectToHost*(host: DockerHost) =
+  var sock = newSocket()
+  if host.kind == unix:
+    return
+  sock.connect(host.host, Port(host.port))
+  while true:
+    var line: TaintedString
+    sock.readLine(line)
+    echo(line)

@@ -3,3 +3,6 @@ nimcache
 
 # Built binaries
 /build
+
+# Test runner
+/tests/runner

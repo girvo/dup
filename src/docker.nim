@@ -27,9 +27,6 @@ proc getHost*(k: string = "DOCKER_HOST"): DockerHost =
 
   if parsed.scheme == "":
     raise newException(IOError, "invalid scheme given from $" & $k & " environment variable: " & parsed.scheme)
-  elif parsed.scheme == "unix":
-    echo(parsed.path)
-    quit()
   if parsed.port == "":
     raise newException(IOError, "invalid port given from $" & $k & " environment variable" & parsed.port)
   if parsed.port == "":

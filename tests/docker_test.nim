@@ -6,10 +6,17 @@ import ../src/docker
 # Test dependencies
 import os
 
+# Core vars
+let
+    hostKey = "FAKE_DOCKER_HOST"
+
 suite "docker":
-    test "getHost pulls DOCKER_HOST if available":
-        var hostKey = "FAKE_DOCKER_HOST"
-        os.putEnv(hostKey, "testing")
-        var res = docker.getHost(hostKey)
+    setup:
+        os.putEnv(hostKey, "https://127.0.0.1:8080")
+
+    teardown:
         os.putEnv(hostKey, "")
-        check(res == "testing")
+
+    test "getHost pulls DOCKER_HOST if available":
+        var res: DockerHost = docker.getHost(hostKey)
+        check(res.scheme == "https")

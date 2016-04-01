@@ -7,12 +7,16 @@ import os
 import net
 import uri
 import strutils
+import httpclient
 
 type
   DockerHost* = tuple
     [scheme: string, host: string, port: int, kind: HostKind]
   HostKind* = enum
     url, unix
+
+proc `$` (d: DockerHost): string =
+  return d.scheme & "://" & d.host & ":" & $d.port
 
 # TODO: This needs to be cross-platform and cross-host, and configurable
 proc getHost*(k: string = "DOCKER_HOST"): DockerHost =
@@ -36,11 +40,12 @@ proc getHost*(k: string = "DOCKER_HOST"): DockerHost =
   return (scheme: parsed.scheme, host: parsed.hostname, port: parseInt(parsed.port), kind: kind)
 
 proc connectToHost*(host: DockerHost) =
-  var sock = newSocket()
+  # var sock = newSocket()
   if host.kind == unix:
     return
-  sock.connect(host.host, Port(host.port))
-  while true:
-    var line: TaintedString
-    sock.readLine(line)
-    echo(line)
+  # sock.connect(host.host, Port(host.port))
+  # while true:
+  #   var line: TaintedString
+  #   sock.readLine(line)
+  #   echo(line)
+  echo(getContent($host & "/images/26b5a23eda83bdd2d8b91cdb4f0e1d9c7fd5cd7bb69f8ed2bbb7b14518181f5d/json"))

@@ -33,5 +33,6 @@ suite "docker":
     check(res.kind == unix)
 
   test "connectToHost":
+    os.putEnv(hostKey, "tcp://192.168.64.2:2375")
     docker.connectToHost(docker.getHost())
     check(0 == 1)

@@ -19,7 +19,7 @@ import strutils
 import json
 import docopt
 
-let args = docopt(doc, version = "Docker Up v0.3.4")
+let args = docopt(doc, version = "Docker Up v0.3.5")
 
 const dupFile = ".up.json"
 const stateFile = ".up.state"
@@ -280,7 +280,7 @@ if args["sql"]:
     discard execCmd("docker exec -it " & config["project"].getStr() & "-db mysql")
     quit(0)
   of "postgres":
-    discard execCmd("docker exec -it " & config["project"].getStr() & "-db psql")
+    discard execCmd("docker exec -it -u postgres " & config["project"].getStr() & "-db psql")
     quit(0)
   else:
     echo("Not implemented yet.")

@@ -19,7 +19,7 @@ import strutils
 import json
 import docopt
 
-let args = docopt(doc, version = "Docker Up v0.3.6")
+let args = docopt(doc, version = "Docker Up v0.3.7")
 
 const dupFile = ".up.json"
 const stateFile = ".up.state"
@@ -123,7 +123,8 @@ proc startWeb(project: string, portMapping="", folderMapping: string, env: JsonN
     env = buildEnv(env)
     link = if hasDB: "--link " & project & "-db:db " else: ""
     folder = if folderMapping == "": "-v $PWD/code:/var/www " else: "-v $PWD/" & folderMapping & " "
-    command = "docker run -d -h " & project & ".docker --name " & project & "-web -p " & portMapping & " " & env & folder & link & " -e TERM=xterm-256color -e VIRTUAL_HOST=" & project & ".docker " & project & ":latest"
+    port = if portMapping == "": " " else: "-p " & portMapping & " "
+    command = "docker run -d -h " & project & ".docker --name " & project & "-web " & port & env & folder & link & " -e TERM=xterm-256color -e VIRTUAL_HOST=" & project & ".docker " & project & ":latest"
     exitCode = execCmd command
   if exitCode != 0:
     echo("Error: Starting web server failed. Check the output above.")

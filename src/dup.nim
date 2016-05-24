@@ -39,8 +39,6 @@ proc checkDupFile(): JsonNode =
   let conf = json.parseFile(getCurrentDir() / dupFile)
   if not conf.hasKey("project"):
     errMissingKey("project", true)
-  if not conf.hasKey("port"):
-    errMissingKey("port", true)
   if not conf.hasKey("db"):
     errMissingKey("db", true)
   if not conf["db"].hasKey("type"):
@@ -119,7 +117,7 @@ proc buildEnv(envDict: JsonNode): string =
     env = env & "-e " & $k & "=" & $v & " "
   return env
 
-proc startWeb(project: string, portMapping: string, folderMapping: string, env: JsonNode, hasDB: bool = true) =
+proc startWeb(project: string, portMapping="", folderMapping: string, env: JsonNode, hasDB: bool = true) =
   echo "Starting web server..."
   let
     env = buildEnv(env)
@@ -194,15 +192,18 @@ if args["up"]:
   var folderMapping = ""
   if config.hasKey("volume"): folderMapping = config["volume"].getStr()
 
+  var portMapping = ""
+  if config.hasKey("port"): portMapping = config["port"].getStr()
+
   case config["db"]["type"].getStr():
   of "mysql":
     startMysql(config["project"].getStr(), config["db"]["name"].getStr(), config["db"]["pass"].getStr())
-    startWeb(project = config["project"].getStr(), portMapping = config["port"].getStr(), folderMapping = folderMapping, env = envDict, hasDB = true)
+    startWeb(project = config["project"].getStr(), portMapping, folderMapping = folderMapping, env = envDict, hasDB = true)
   of "postgres":
     startPostgres(config["project"].getStr(), config["db"]["name"].getStr(), config["db"]["user"].getStr(), config["db"]["pass"].getStr())
-    startWeb(project = config["project"].getStr(), portMapping = config["port"].getStr(), folderMapping = folderMapping, env = envDict, hasDB = true)
+    startWeb(project = config["project"].getStr(), portMapping, folderMapping = folderMapping, env = envDict, hasDB = true)
   of "none":
-    startWeb(project = config["project"].getStr(), portMapping = config["port"].getStr(), folderMapping = folderMapping, env = envDict, hasDB = false)
+    startWeb(project = config["project"].getStr(), portMapping, folderMapping = folderMapping, env = envDict, hasDB = false)
   else:
     echo("Error: Invalid database type specified.")
     quit(252)

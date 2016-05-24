@@ -19,7 +19,7 @@ import strutils
 import json
 import docopt
 
-let args = docopt(doc, version = "Docker Up v0.3.5")
+let args = docopt(doc, version = "Docker Up v0.3.6")
 
 const dupFile = ".up.json"
 const stateFile = ".up.state"

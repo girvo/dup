@@ -245,9 +245,9 @@ if args["build"]:
 
   var command = ""
   if args["--no-cache"]:
-    command = "docker build --no-cache " & df & " -t " & config["project"].getStr() & ":latest ."
+    command = "docker build --build-arg env=dev --no-cache " & df & " -t " & config["project"].getStr() & ":latest ."
   else:
-    command = "docker build " & df & " -t " & config["project"].getStr() & ":latest ."
+    command = "docker build --build-arg env=dev " & df & " -t " & config["project"].getStr() & ":latest ."
 
   let exitCode = execCmd(command)
   if exitCode != 0:

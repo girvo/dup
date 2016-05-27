@@ -17,8 +17,7 @@ run: $(BIN_DIR)/$(APP_NAME)
 
 linux:
 	docker build -t dup:latest .
-	docker run --rm -v $(CURDIR)/build/linux/:/build/ dup:latest make
-	rm -rf build/linux/linux
+	docker run --rm -v $(CURDIR)/build/linux/:/build dup:latest cp /dup/build/dup /build/dup
 
 $(BIN_DIR)/$(APP_NAME): $(wildcard $SRC_DIR/**/*.nim)
 	nim c $(NIM_OPTS) --out:../$(BIN_DIR)/$(APP_NAME) $(SRC_DIR)/$(APP_NAME)

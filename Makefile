@@ -5,9 +5,6 @@ SRC_DIR=src
 
 all: clean $(BIN_DIR)/$(APP_NAME)
 
-clean-linux:
-	rm -rf build/linux/linux
-
 clean:
 	rm -f build/dup build/*.tar.gz build/linux/dup && \
 	mkdir -p build build/linux

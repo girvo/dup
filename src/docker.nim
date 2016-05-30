@@ -56,3 +56,22 @@ proc connectToUnix*(host: DockerHost): Option[Socket] =
     echo ("Fatal Error: An unexpected error occurred")
     return None[Socket]()
   return Some(sock)
+
+proc sendToSocket*(sockOpt: Option[Socket], meth: string, path: string): Option[string] =
+  if not sockOpt:
+    return None[string]()
+  var sock = get sockOpt
+  var cont = true
+  sock.send(meth & " " & path & "HTTP/1.0\r\n\n")
+  try:
+    var res = ""
+    while cont:
+      var buf = ""
+      sock.readLine(buf, 500)
+      if buf != "":
+        res = res & buf & "\n"
+      else:
+        cont = false
+    return Some[string]($res)
+  except:
+    return None[string]()

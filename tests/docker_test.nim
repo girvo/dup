@@ -5,8 +5,10 @@ import ../src/docker
 
 # Test dependencies
 import os
-import optional_t
 import net
+import strutils
+import optional_t
+
 
 # Core vars
 let
@@ -46,11 +48,16 @@ suite "docker: unit":
     check (isSome sock)
 
 suite "docker: integration":
+  setup:
+    discard
+  teardown:
+    discard
+
   test "connectToUnix can send to the socket":
     let sockOpt = docker.connectToUnix(unixHost)
     if sockOpt:
       # Pull the Socket out of the optional
-      let sock = get sockOpt
-      sock.send("GET / HTTP/1.1\r\n")
+      var result = docker.sendToSocket(sockOpt, "GET", "/version").get(default = "")
+      check (len(result) > 0)
     else:
       check (false)

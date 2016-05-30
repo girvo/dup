@@ -47,4 +47,12 @@ proc connectToUnix*(host: DockerHost): Option[Socket] =
     ## Return out if we've got the wrong host kind
     return None[Socket]()
   let sock = newSocket(AF_UNIX, SOCK_STREAM, IPPROTO_IP)
+  try:
+    sock.connectUnix(host.host)
+  except OSError:
+    echo ("Socket Error: Can't connect to the Docker socket at '" & host.host & "'")
+    return None[Socket]()
+  except:
+    echo ("Fatal Error: An unexpected error occurred")
+    return None[Socket]()
   return Some(sock)

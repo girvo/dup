@@ -46,8 +46,10 @@ suite "docker":
     check (isSome sock)
 
   test "INTEGRATION: connectToUnix can send to the socket":
-    let
-      sockSome = docker.connectToUnix(unixHost)
-      sock = get sockSome
-    sock.connectUnix(unixHost.host)
-    sock.send("GET / HTTP/1.1\r\n")
+    let sockOpt = docker.connectToUnix(unixHost)
+    if sockOpt:
+      # Pull the Socket out of the optional
+      let sock = get sockOpt
+      sock.send("GET / HTTP/1.1\r\n")
+    else:
+      check (false)

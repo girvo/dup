@@ -23,15 +23,19 @@ proc `$` (d: DockerHost): string =
 
 # TODO: This needs to be cross-platform and cross-host, and configurable
 proc getHost*(k: string = "DOCKER_HOST"): DockerHost =
-  var
-    host = if existsEnv(k): getEnv(k) else: "unix:///var/run/docker.sock"
-    kind: HostKind = if host.startsWith("unix"): unix else: url
+  var host = "unix:///var/run/socker.dock"
+  var kind = unix
+
+  if (existsEnv(k)):
+    host = getEnv(k)
+  else:
+    echo ("Info: No DOCKER_HOST env var defined, defaulting to unix socket...")
+  if (host.startsWith("unix")): kind = unix else: kind = url
 
   if kind == unix:
     return (scheme: "unix", host: host.replace("unix://", ""), port: 0, kind: kind)
 
   var parsed = host.parseUri()
-
   if parsed.scheme == "":
     raise newException(IOError, "invalid scheme given from $" & $k & " environment variable: " & parsed.scheme)
   if parsed.port == "":

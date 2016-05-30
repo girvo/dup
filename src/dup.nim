@@ -20,7 +20,7 @@ import json
 import docopt
 import docker
 
-let args = docopt(doc, version = "Docker Up v0.3.4")
+let args = docopt(doc, version = "Docker Up v0.3.7")
 
 const dupFile = ".up.json"
 const stateFile = ".up.state"
@@ -40,8 +40,6 @@ proc checkDupFile(): JsonNode =
   let conf = json.parseFile(getCurrentDir() / dupFile)
   if not conf.hasKey("project"):
     errMissingKey("project", true)
-  if not conf.hasKey("port"):
-    errMissingKey("port", true)
   if not conf.hasKey("db"):
     errMissingKey("db", true)
   if not conf["db"].hasKey("type"):
@@ -120,13 +118,14 @@ proc buildEnv(envDict: JsonNode): string =
     env = env & "-e " & $k & "=" & $v & " "
   return env
 
-proc startWeb(project: string, portMapping: string, folderMapping: string, env: JsonNode, hasDB: bool = true) =
+proc startWeb(project: string, portMapping="", folderMapping: string, env: JsonNode, hasDB: bool = true) =
   echo "Starting web server..."
   let
     env = buildEnv(env)
     link = if hasDB: "--link " & project & "-db:db " else: ""
     folder = if folderMapping == "": "-v $PWD/code:/var/www " else: "-v $PWD/" & folderMapping & " "
-    command = "docker run -d -h " & project & ".docker --name " & project & "-web -p " & portMapping & " " & env & folder & link & " -e TERM=xterm-256color -e VIRTUAL_HOST=" & project & ".docker " & project & ":latest"
+    port = if portMapping == "": " " else: "-p " & portMapping & " "
+    command = "docker run -d -h " & project & ".docker --name " & project & "-web " & port & env & folder & link & " -e TERM=xterm-256color -e VIRTUAL_HOST=" & project & ".docker " & project & ":latest"
     exitCode = execCmd command
   if exitCode != 0:
     echo("Error: Starting web server failed. Check the output above.")
@@ -195,15 +194,18 @@ if args["up"]:
   var folderMapping = ""
   if config.hasKey("volume"): folderMapping = config["volume"].getStr()
 
+  var portMapping = ""
+  if config.hasKey("port"): portMapping = config["port"].getStr()
+
   case config["db"]["type"].getStr():
   of "mysql":
     startMysql(config["project"].getStr(), config["db"]["name"].getStr(), config["db"]["pass"].getStr())
-    startWeb(project = config["project"].getStr(), portMapping = config["port"].getStr(), folderMapping = folderMapping, env = envDict, hasDB = true)
+    startWeb(project = config["project"].getStr(), portMapping, folderMapping = folderMapping, env = envDict, hasDB = true)
   of "postgres":
     startPostgres(config["project"].getStr(), config["db"]["name"].getStr(), config["db"]["user"].getStr(), config["db"]["pass"].getStr())
-    startWeb(project = config["project"].getStr(), portMapping = config["port"].getStr(), folderMapping = folderMapping, env = envDict, hasDB = true)
+    startWeb(project = config["project"].getStr(), portMapping, folderMapping = folderMapping, env = envDict, hasDB = true)
   of "none":
-    startWeb(project = config["project"].getStr(), portMapping = config["port"].getStr(), folderMapping = folderMapping, env = envDict, hasDB = false)
+    startWeb(project = config["project"].getStr(), portMapping, folderMapping = folderMapping, env = envDict, hasDB = false)
   else:
     echo("Error: Invalid database type specified.")
     quit(252)
@@ -245,9 +247,9 @@ if args["build"]:
 
   var command = ""
   if args["--no-cache"]:
-    command = "docker build --no-cache " & df & " -t " & config["project"].getStr() & ":latest ."
+    command = "docker build --build-arg env=dev --no-cache " & df & " -t " & config["project"].getStr() & ":latest ."
   else:
-    command = "docker build " & df & " -t " & config["project"].getStr() & ":latest ."
+    command = "docker build --build-arg env=dev " & df & " -t " & config["project"].getStr() & ":latest ."
 
   let exitCode = execCmd(command)
   if exitCode != 0:
@@ -281,7 +283,7 @@ if args["sql"]:
     discard execCmd("docker exec -it " & config["project"].getStr() & "-db mysql")
     quit(0)
   of "postgres":
-    discard execCmd("docker exec -it " & config["project"].getStr() & "-db psql")
+    discard execCmd("docker exec -it -u postgres " & config["project"].getStr() & "-db psql")
     quit(0)
   else:
     echo("Not implemented yet.")

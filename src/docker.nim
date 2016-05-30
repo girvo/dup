@@ -64,18 +64,25 @@ proc connectToUnix*(host: DockerHost): Option[Socket] =
 proc sendToSocket*(sockOpt: Option[Socket], meth: string, path: string): Option[string] =
   if not sockOpt:
     return None[string]()
-  var sock = get sockOpt
-  var cont = true
-  sock.send(meth & " " & path & "HTTP/1.1\r\n\n")
+  var
+    sock = get sockOpt
+    cont = true
+    captureBody = false
+  # Send the request off to the Socket
+  sock.send(meth & " " & path & " HTTP/1.0\r\n\n")
   try:
     var res = ""
     while cont:
       var buf = ""
       sock.readLine(buf, 500)
-      if buf != "":
-        res = res & buf & "\n"
-      else:
+      if buf == "":
         cont = false
-    return Some[string]($res)
+      if buf == "\r\n":
+        captureBody = true
+        continue
+      if captureBody and cont:
+        res = res & buf & "\n"
+    var stripped = strip(s=(res), trailing=true, chars=NewLines)
+    return Some[string](stripped)
   except:
     return None[string]()

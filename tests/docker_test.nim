@@ -57,7 +57,8 @@ suite "docker: integration":
     let sockOpt = docker.connectToUnix(unixHost)
     if sockOpt:
       # Pull the Socket out of the optional
-      var result = docker.sendToSocket(sockOpt, "GET", "/version").get(default = "")
-      check (len(result) > 0)
+      var result = docker.sendToSocket(sockOpt, "GET", "/images/json").get(default = "")
+      # check (len(result) > 0)
+      echo result
     else:
-      check (false)
+      fail

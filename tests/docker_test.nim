@@ -13,7 +13,7 @@ let
   hostKey = "FAKE_DOCKER_HOST"
   unixHost: DockerHost = (scheme: "unix", host: "/var/run/docker.sock", port: 0, kind: unix)
 
-suite "docker":
+suite "docker: unit":
   setup:
     os.putEnv(hostKey, "tcp://127.0.0.1:2375")
 
@@ -45,7 +45,8 @@ suite "docker":
     let sock = docker.connectToUnix(unixHost)
     check (isSome sock)
 
-  test "INTEGRATION: connectToUnix can send to the socket":
+suite "docker: integration":
+  test "connectToUnix can send to the socket":
     let sockOpt = docker.connectToUnix(unixHost)
     if sockOpt:
       # Pull the Socket out of the optional

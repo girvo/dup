@@ -7,13 +7,16 @@ import os
 import net
 import uri
 import strutils
-import httpclient
+import optional_t
 
 type
   DockerHost* = tuple
     [scheme: string, host: string, port: int, kind: HostKind]
   HostKind* = enum
     url, unix
+
+type
+  DockerError* = object of Exception
 
 proc `$` (d: DockerHost): string =
   return d.scheme & "://" & d.host & ":" & $d.port
@@ -39,13 +42,9 @@ proc getHost*(k: string = "DOCKER_HOST"): DockerHost =
   # Return our DockerHost tuple
   return (scheme: parsed.scheme, host: parsed.hostname, port: parseInt(parsed.port), kind: kind)
 
-proc connectToHost*(host: DockerHost) =
-  # var sock = newSocket()
-  if host.kind == unix:
-    return
-  # sock.connect(host.host, Port(host.port))
-  # while true:
-  #   var line: TaintedString
-  #   sock.readLine(line)
-  #   echo(line)
-  echo(getContent($host & "/images/26b5a23eda83bdd2d8b91cdb4f0e1d9c7fd5cd7bb69f8ed2bbb7b14518181f5d/json"))
+proc connectToUnix*(host: DockerHost): Option[Socket] =
+  if host.kind != unix:
+    ## Return out if we've got the wrong host kind
+    return None[Socket]()
+  let sock = newSocket(AF_UNIX, SOCK_STREAM, IPPROTO_IP)
+  return Some(sock)

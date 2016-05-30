@@ -62,7 +62,7 @@ proc sendToSocket*(sockOpt: Option[Socket], meth: string, path: string): Option[
     return None[string]()
   var sock = get sockOpt
   var cont = true
-  sock.send(meth & " " & path & "HTTP/1.0\r\n\n")
+  sock.send(meth & " " & path & "HTTP/1.1\r\n\n")
   try:
     var res = ""
     while cont:

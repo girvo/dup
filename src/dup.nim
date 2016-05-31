@@ -137,7 +137,6 @@ let config = checkDupFile()
 ###
 # Command definitions
 ##
-##
 if args["init"]:
   if checkStateFile():
     echo("Error: Docker Up has already been initalised.")

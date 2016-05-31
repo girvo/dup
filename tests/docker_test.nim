@@ -8,7 +8,7 @@ import os
 import net
 import strutils
 import optional_t
-
+import json
 
 # Core vars
 let
@@ -58,7 +58,8 @@ suite "docker: integration":
     if sockOpt:
       # Pull the Socket out of the optional
       var result = docker.sendToSocket(sockOpt, "GET", "/images/json").get(default = "")
-      # check (len(result) > 0)
-      echo result
+      check (len(result) > 0)
+      #let jobj = parseJson(result)
+      #echo ($jobj[0]["Id"].str)
     else:
       fail

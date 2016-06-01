@@ -24,28 +24,28 @@ suite "docker: unit":
 
   test "getHost parses TCP DOCKER_HOST correctly":
     let res: DockerHost = docker.getHost(hostKey)
-    check (res.scheme == "tcp")
-    check (res.port == 2375)
-    check (res.host == "127.0.0.1")
-    check (res.kind == url)
+    check: res.scheme == "tcp"
+    check: res.port == 2375
+    check: res.host == "127.0.0.1"
+    check: res.kind == url
 
   test "getHost parses unix socket correctly":
     os.putEnv(hostKey, "unix:///var/run/docker.sock")
     let res: DockerHost = docker.getHost(hostKey)
-    check (res.scheme == "unix")
-    check (res.port == 0)
-    check (res.host == "/var/run/docker.sock")
-    check (res.kind == unix)
+    check: res.scheme == "unix"
+    check: res.port == 0
+    check: res.host == "/var/run/docker.sock"
+    check: res.kind == unix
 
   test "connectToUnix raises exception on incorrect DockerHost":
     # var host: DockerHost = (scheme: "unix", host: "/var/run/docker.sock", port: 0, kind: unix)
     let host: DockerHost = (scheme: "tcp", host: "example.com", port: 80, kind: url)
     let result = docker.connectToUnix(host)
-    check (isNone result)
+    check: isNone result
 
   test "connectToUnix creates a socket for us to listen to":
     let sock = docker.connectToUnix(unixHost)
-    check (isSome sock)
+    check: isSome sock
 
 suite "docker: integration":
   setup:
@@ -58,7 +58,7 @@ suite "docker: integration":
     if sockOpt:
       # Pull the Socket out of the optional
       var result = docker.sendToSocket(sockOpt, "GET", "/images/json").get(default = "")
-      check (len(result) > 0)
+      check: len(result) > 0
       #let jobj = parseJson(result)
       #echo ($jobj[0]["Id"].str)
     else:

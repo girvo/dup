@@ -6,6 +6,9 @@ TEST_DIR=tests
 
 all: clean $(BIN_DIR)/$(APP_NAME)
 
+tar: $(wildcard ./tar/*.nim)
+	@nim c --run tar/tar
+
 test: $(wildcard $SRC_DIR/**/*.nim)
 	@nim c --run -w:off --hints:off tests/runner.nim
 

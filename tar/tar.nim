@@ -6,10 +6,16 @@
 ## See: http://wiki.osdev.org/Tar
 
 import os
-import asyncfile
-import tar_header as tar
+
+{.compile: "sltar.c".}
+proc compress(p: cstring): cint {.importc.}
 
 proc main () =
-  var test = tar.Header()
+  var
+    argc = paramCount()
+  for i in 1..argc:
+    var p: cstring = paramStr(i)
+    discard compress(p)
 
-main()
+when isMainModule:
+  main()

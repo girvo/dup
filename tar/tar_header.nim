@@ -2,6 +2,8 @@
 ##
 ## Header definitions for the TAR implementation
 
+import strutils
+
 const
   RECORDSIZE* = 512 ## Pads out header with zeroes to RECORDSIZE, in bytes
   NAMSIZ* = 100 ## Size of the filename field, in bytes
@@ -11,18 +13,18 @@ const
 type
   Header* {.packed.} = object #\
     ## TAR hader, a packed struct (-ish) of chars, that adds up to RECORDSIZE
-    filename: array[NAMSIZ, char]
-    mode: array[8, char]
-    uid: array[8, char]
-    gid: array[8, char]
-    size: array[12, char]
-    mtime: array[12, char]
-    chksum: array[8, char]
-    linkflag: char
-    linkname: array[NAMSIZ, char]
-    magic: array[8, char]
-    uname: array[TUNMLEN, char]
-    gname: array[TGNMLEN, char]
+    filename*: array[NAMSIZ, char]
+    mode*: array[8, char]
+    uid*: array[8, char]
+    gid*: array[8, char]
+    size*: array[12, char]
+    mtime*: array[12, char]
+    chksum*: array[8, char]
+    linkflag*: char
+    linkname*: array[NAMSIZ, char]
+    magic*: array[8, char]
+    uname*: array[TUNMLEN, char]
+    gname*: array[TGNMLEN, char]
 
   Record* = object {.union.}
     charptr*: array[RECORDSIZE, char]
@@ -70,3 +72,9 @@ const
   TOREAD* = 4
   TOWRITE* = 2
   TOEXEC* = 1
+
+proc newHeader* (filename: string): Header =
+  var s = filename
+  setLen(s, Natural(NAMSIZ))
+  var fname = cast[ptr array[NAMSIZ, char]](addr(s[0]))
+  Header(filename: fname[])

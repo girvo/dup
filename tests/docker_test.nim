@@ -55,11 +55,11 @@ suite "docker: integration":
 
   test "connectToUnix can send to the socket":
     let sockOpt = docker.connectToUnix(unixHost)
-    if sockOpt.isDefined():
+    if sockOpt.isDefined:
       # Pull the Socket out of the optional
       var result = docker.sendToSocket(sockOpt, "GET", "/images/json").getOrElse("")
       check: len(result) > 0
-      #let jobj = parseJson(result)
-      #echo ($jobj[0]["Id"].str)
+      let jobj = parseJson(result)
+      echo ($jobj[0]["Id"].str)
     else:
       fail

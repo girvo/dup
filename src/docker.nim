@@ -7,7 +7,7 @@ import os
 import net
 import uri
 import strutils
-import optional_t
+import fp/option
 
 type
   DockerHost* = tuple
@@ -55,14 +55,14 @@ proc connectToUnix*(host: DockerHost): Option[Socket] =
     sock.connectUnix(host.host)
   except OSError:
     echo ("Socket Error: Can't connect to the Docker socket at '" & host.host & "'")
-    return None[Socket]()
+    return none(Socket)
   except:
     echo ("Fatal Error: An unexpected error occurred")
-    return None[Socket]()
-  return Some(sock)
+    return none(Socket)
+  return sock.some
 
 proc sendToSocket*(sockOpt: Option[Socket], meth: string, path: string): Option[string] =
-  if not sockOpt:
+  if sockOpt.isEmpty:
     return None[string]()
   var
     sock = get sockOpt
@@ -83,6 +83,6 @@ proc sendToSocket*(sockOpt: Option[Socket], meth: string, path: string): Option[
       if captureBody and cont:
         res = res & buf & "\n"
     var stripped = strip(s=(res), trailing=true, chars=NewLines)
-    return Some[string](stripped)
+    return stripped.some
   except:
-    return None[string]()
+    return none(string)

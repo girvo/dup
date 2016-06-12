@@ -1,12 +1,12 @@
 ## Core functions wrapping around the Docker remote API for Dup and Duploy
 
-import os, strutils
-import optional_t
+import os, strutils, future
+import fp/option
 import docker
 
-proc hello* () =
-  var theThing: Option[string] = Some("testing")
-  echo theThing.map(proc (input: string): string =
-    input & "!!").map(proc (input: string): string =
-      input & "?")
-  echo get theThing
+proc hello*() =
+  var testing = Some("testing")
+  echo testing.map((input: string) -> string =>
+    input & "!!").map((input: string) -> string =>
+      input & "??")
+  echo get testing

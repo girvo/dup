@@ -24,6 +24,6 @@ linux:
 	docker run --rm -v $(CURDIR)/build/linux/:/build dup:latest cp /dup/build/dup /build/dup
 
 $(BIN_DIR)/$(APP_NAME): $(wildcard $SRC_DIR/**/*.nim)
-	nim c $(NIM_OPTS) --out:../$(BIN_DIR)/$(APP_NAME) $(SRC_DIR)/$(APP_NAME)
+	nim c $(NIM_OPTS) --out:./$(BIN_DIR)/$(APP_NAME) $(SRC_DIR)/$(APP_NAME)
 
 .PHONY: all clean run

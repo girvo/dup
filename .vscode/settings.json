@@ -1,0 +1,7 @@
+// Place your settings in this file to overwrite default and user settings.
+{
+    "nim.buildOnSave": false,
+    "nim.buildCommand": "c",
+    "nim.project": "src/dup.nim",
+    "nim.test-project": "tests/runner.nim"
+}

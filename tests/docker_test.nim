@@ -7,7 +7,7 @@ import ../src/docker
 import os
 import net
 import strutils
-import optional_t
+import fp/option
 import json
 
 # Core vars
@@ -41,11 +41,11 @@ suite "docker: unit":
     # var host: DockerHost = (scheme: "unix", host: "/var/run/docker.sock", port: 0, kind: unix)
     let host: DockerHost = (scheme: "tcp", host: "example.com", port: 80, kind: url)
     let result = docker.connectToUnix(host)
-    check: isNone result
+    check: isEmpty result
 
   test "connectToUnix creates a socket for us to listen to":
     let sock = docker.connectToUnix(unixHost)
-    check: isSome sock
+    check: isDefined sock
 
 suite "docker: integration":
   setup:
@@ -55,9 +55,9 @@ suite "docker: integration":
 
   test "connectToUnix can send to the socket":
     let sockOpt = docker.connectToUnix(unixHost)
-    if sockOpt:
+    if sockOpt.isDefined():
       # Pull the Socket out of the optional
-      var result = docker.sendToSocket(sockOpt, "GET", "/images/json").get(default = "")
+      var result = docker.sendToSocket(sockOpt, "GET", "/images/json").getOrElse("")
       check: len(result) > 0
       #let jobj = parseJson(result)
       #echo ($jobj[0]["Id"].str)

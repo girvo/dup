@@ -6,4 +6,4 @@ description   = "CLI wrapper for local Docker web development"
 license       = "MIT"
 
 [Deps]
-Requires: "nim >= 0.10.0, docopt >= 0.6.2, optional_t >= 1.2.0, utils >= 0.1.0"
+Requires: "nim >= 0.10.0, docopt >= 0.6.2, optional_t >= 1.2.0, utils >= 0.1.0, nimfp >= 0.1.0"

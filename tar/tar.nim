@@ -9,6 +9,7 @@
 import os
 import posix
 import strutils
+import nimfp
 
 # Third-party & custom dependencies
 from utils/binary as bin import nil

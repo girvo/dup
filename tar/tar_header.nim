@@ -24,10 +24,6 @@ type
     uname: array[TUNMLEN, char]
     gname: array[TGNMLEN, char]
 
-  Record* = object {.union.}
-    charptr*: array[RECORDSIZE, char]
-    header*: Header
-
 ## The checksum field is filled with this while the checksum is computed.
 const
   CHKBLANKS* = "        "

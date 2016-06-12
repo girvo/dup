@@ -71,6 +71,6 @@ const
 
 proc newHeader* (filename: string): Header =
   var s = filename
-  setLen(s, Natural(NAMSIZ))
-  var fname = cast[ptr array[NAMSIZ, char]](addr(s[0]))
-  Header(filename: fname[])
+  setLen(s, Natural(100))
+  # var fname = cast[ptr array[100, char]](addr(s[0]))[]
+  Header(mode: ['w', 'a', 'a', 'a', 'a', 'a', 'a', 'b'])

@@ -54,5 +54,10 @@ proc main*() : void =
   # close our "tar"
   close (file)
 
-when isMainModule:
-  main()
+proc main (): int =
+  var fh = open ("./output.bin", fmWrite)
+  var written = writeChars(f=fh, a="HAH", 0, Natural(3))
+  echo ($written)
+  result = 0
+
+quit main()

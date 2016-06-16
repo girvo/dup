@@ -60,6 +60,6 @@ suite "docker: integration":
       var result = docker.sendToSocket(sockOpt, "GET", "/images/json").getOrElse("")
       check: len(result) > 0
       let jobj = parseJson(result)
-      echo ($jobj[0]["Id"].str)
+      #echo ($jobj[0]["Id"].str)
     else:
       fail

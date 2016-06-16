@@ -9,10 +9,10 @@
 import os
 import posix
 import strutils
-import nimfp
+import fp/option
+import utils/binary
 
 # Third-party & custom dependencies
-from utils/binary as bin import nil
 from tar_header as tar import nil
 
 proc statTesting*() : Stat =
@@ -26,8 +26,8 @@ proc rpad*(str: string, len: Natural, pad: char = '\0') : string =
     result = str & repeat(pad, diff)
 
 proc headerPtrTest*() : void =
-  var header = bin.newPtr[uint8](512)
-  var fname = bin.newPtr[uint8]("./testing.txt")
+  var header = newPtr[uint8](512)
+  var fname = newPtr[uint8]("./testing.txt")
   var nextOffset = 0
   var currentLen = 100
   header[0].copyFrom(fname[0])
@@ -35,7 +35,7 @@ proc headerPtrTest*() : void =
 
 proc main*() : void =
   # Lets craft a TAR header
-  var file = open ("./me.tar", fmWrite)
+  var file = open ("/tmp/me.tar", fmWrite)
   # Filename and stat
   var fname = "./testing.txt"
   var testing: Stat

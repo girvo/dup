@@ -1,3 +1,12 @@
+## dup: a managed local Docker web development tool
+##
+## Author: Josh Girvin <josh@jgirvin.com>
+## License: MIT
+
+## Define our version constant for re-use
+const version = "Docker Up v0.3.8"
+
+## Define our docopt parsing schema
 let doc = """
 Declaratively define and run stateful Docker containers for web development.
 
@@ -10,7 +19,7 @@ Usage:
   dup bash [web | db]
   dup sql
   dup (-h | --help)
-  dup --version
+  dup (-v | --version)
 """
 
 import os
@@ -18,8 +27,19 @@ import osproc
 import strutils
 import json
 import docopt
+import random
+import net
 
-let args = docopt(doc, version = "Docker Up v0.3.7")
+## Parse command-line options with docopt.nim
+let args = docopt(doc, version = version)
+
+## Handle version printing ourselves
+## This is done to solve a docopt parsing quirk, where short-opt "-v" can't be
+## bound to "--version" properly. We need to do this first, to get around the
+## .up.json and Dockerfile checks that are run immediately for other commands
+if args["-v"] or args["--version"]:
+  echo(version)
+  quit(0)
 
 const dupFile = ".up.json"
 const stateFile = ".up.state"
@@ -32,7 +52,7 @@ proc errMissingKey(key: string, ctx: string, shouldQuit: bool = false) =
   echo("Error: Missing \"" & key & "\" key in \"" & ctx & "\".")
   if shouldQuit: quit(251)
 
-proc checkDupFile(): JsonNode =
+proc checkAndParseDupFile(): JsonNode =
   if not existsFile(getCurrentDir() / dupFile):
     echo("Error: Missing \".up.json\" in current directory.")
     quit(255)
@@ -95,21 +115,63 @@ proc buildStatefile() =
       a.writeLine(".up.state")
       a.close()
 
+proc getAndCheckRandomPort(): int =
+  ## Generates a random port number, checks whether it is open and returns the
+  ## port if it is. Maximum cycle check of 10 to ensure we don't lock up the
+  ## process unnecesarily
+  proc generate(): int =
+    ## Internal proc to generate a random port number from 1024..65534
+    randomize()
+    var port: int = random(65534) + 1024
+    if port >= 65534:
+        port = port - 1024
+    return port
+
+  proc check(port: int): bool =
+    ## Internal proc to check whether a given port is free
+    var free = false
+    try:
+      var sock = newSocket()
+      sock.connect("localhost", Port(port))
+      sock.close()
+      free = true
+    except:
+      free = false
+    return free
+  var
+    exposedPort = generate()   # Generate our first port
+    count = 1                  # Init the cycle checker
+  # Start our port checker loop
+  while (check(exposedPort) == false) and (count <= 10):
+    count = count + 1
+    exposedPort = generate()
+  # Final cycle checker exit
+  if count <= 10:
+    echo("Error: Could not find a free host port to bind to")
+    quit(243)
+  return exposedPort
+
 proc startMysql(project: string, dbname: string, dbpass: string) =
   echo "Starting MySQL..."
-  let command = "docker run -d --name " & project & "-db --volumes-from " & project & "-data -e MYSQL_PASS=" & dbpass & " -e ON_CREATE_DB=" & dbname & " tutum/mysql"
+  let chosenPort = getAndCheckRandomPort()
+  let portFragment = $chosenPort & ":3306"
+  let command = "docker run -d --name " & project & "-db --volumes-from " & project & "-data -e MYSQL_PASS=" & dbpass & " -e ON_CREATE_DB=" & dbname & " -p " & portFragment & " tutum/mysql"
   let exitCode = execCmd command
   if exitCode != 0:
     echo("Error: Starting MySQL failed. Check the output above.")
     quit(exitCode)
+  echo("Success: MySQL started, and exposed on host port " & $chosenPort)
 
 proc startPostgres(project: string, dbname: string, dbuser: string, dbpass: string) =
   echo "Starting Postgres..."
-  let command = "docker run -d --name " & project & "-db --volumes-from " & project & "-data -e DB_PASS=" & dbpass & " -e DB_NAME=" & dbname & " -e DB_USER=" & dbuser & " sameersbn/postgresql"
+  let chosenPort = getAndCheckRandomPort()
+  let portFragment = $chosenPort & ":5432"
+  let command = "docker run -d --name " & project & "-db --volumes-from " & project & "-data -e DB_PASS=" & dbpass & " -e DB_NAME=" & dbname & " -e DB_USER=" & dbuser & " -p " & portFragment & " sameersbn/postgresql"
   let exitCode = execCmd command
   if exitCode != 0:
     echo("Error: Starting Postgres failed. Check the output above.")
     quit(exitCode)
+  echo("Success: Postgres started, and exposed on host port " & $chosenPort)
 
 proc buildEnv(envDict: JsonNode): string =
   var env = ""
@@ -131,12 +193,12 @@ proc startWeb(project: string, portMapping="", folderMapping: string, env: JsonN
 
 # Check our Dockerfile and .up.json files exist
 checkDockerfile()
-let config = checkDupFile()
+let config = checkAndParseDupFile()
 
-###
-# Command definitions
 ##
+## Command definitions
 ##
+
 if args["init"]:
   if checkStateFile():
     echo("Error: Docker Up has already been initalised.")

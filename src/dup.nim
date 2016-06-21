@@ -3,8 +3,16 @@
 ## Author: Josh Girvin <josh@jgirvin.com>
 ## License: MIT
 
+import os
+import osproc
+import strutils
+import json
+import docopt
+import random
+import net
+
 ## Define our version constant for re-use
-const version = "Docker Up v0.3.8"
+const version = "dup 0.3.8"
 
 ## Define our docopt parsing schema
 let doc = """
@@ -21,14 +29,6 @@ Usage:
   dup (-h | --help)
   dup (-v | --version)
 """
-
-import os
-import osproc
-import strutils
-import json
-import docopt
-import random
-import net
 
 ## Parse command-line options with docopt.nim
 let args = docopt(doc, version = version)

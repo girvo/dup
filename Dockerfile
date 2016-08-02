@@ -29,4 +29,4 @@ ADD ./Makefile /dup/Makefile
 WORKDIR /dup
 RUN nimble -y install
 ENV NIM_ENV=release
-RUN make
+RUN make release

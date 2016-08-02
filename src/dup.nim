@@ -12,7 +12,7 @@ import random
 import net
 
 ## Define our version constant for re-use
-const version = "dup 0.3.9"
+const version = "dup 0.3.10"
 
 ## Define our docopt parsing schema
 let doc = """
@@ -221,7 +221,7 @@ if args["init"]:
   of "postgres":
     echo("Initialising Postgres volume-only container...")
     let
-      command = "docker run -d -v /var/lib/postgres/data --name " & config["project"].getStr() & "-data --entrypoint /bin/echo sameersbn/postgresql"
+      command = "docker run -d -v /var/lib/postgres --name " & config["project"].getStr() & "-data -e POSTGRES_PASSWORD=" & config["db"]["pass"].getStr() & " -e POSTGRES_DB=" & config["db"]["name"].getStr() & " -e POSTGRES_USER=" & config["db"]["user"].getStr() & " --entrypoint /bin/echo postgres:9.5"
       exitCode = execCmd command
     if exitCode != 0:
       echo("Error: An error occurred while creating the volume-only container. See the above output for details.")

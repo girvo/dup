@@ -16,8 +16,8 @@ linux:
 	docker build -t dup:latest .
 	docker run --rm -v $(CURDIR)/build/linux/:/build dup:latest cp /dup/build/dup /build/dup
 
-release:
-	nim c $(NIM_OPTS) -d:release --out:$(BIN_DIR)/$(APP_NAME) $(SRC_DIR)/$(APP_NAME)
+release: clean
+	nim c $(NIM_OPTS) --define:release --out:$(BIN_DIR)/$(APP_NAME) $(SRC_DIR)/$(APP_NAME)
 
 $(BIN_DIR)/$(APP_NAME): $(wildcard $SRC_DIR/**/*.nim)
 	nim c $(NIM_OPTS) --out:$(BIN_DIR)/$(APP_NAME) $(SRC_DIR)/$(APP_NAME)

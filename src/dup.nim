@@ -12,7 +12,7 @@ import random
 import net
 
 ## Define our version constant for re-use
-const version = "dup 0.3.8"
+const version = "dup 0.3.9"
 
 ## Define our docopt parsing schema
 let doc = """
@@ -166,7 +166,7 @@ proc startPostgres(project: string, dbname: string, dbuser: string, dbpass: stri
   echo "Starting Postgres..."
   let chosenPort = getAndCheckRandomPort()
   let portFragment = $chosenPort & ":5432"
-  let command = "docker run -d --name " & project & "-db --volumes-from " & project & "-data -e DB_PASS=" & dbpass & " -e DB_NAME=" & dbname & " -e DB_USER=" & dbuser & " -p " & portFragment & " sameersbn/postgresql"
+  let command = "docker run -d --name " & project & "-db --volumes-from " & project & "-data -e POSTGRES_PASSWORD=" & dbpass & " -e POSTGRES_DB=" & dbname & " -e POSTGRES_USER=" & dbuser & " -p " & portFragment & " postgres:9.5"
   let exitCode = execCmd command
   if exitCode != 0:
     echo("Error: Starting Postgres failed. Check the output above.")

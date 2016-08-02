@@ -17,6 +17,12 @@ Usage:
 
 ## New features
 
+### v0.3.9
+
+This release added support for the official PostgreSQL Docker image, to allow the usage of version 9.5 (for it's `jsonb` support). In the future, you will be able to specify which point release of PostgreSQL your project needs.
+
+### v0.3.7
+
 The main new feature in v0.3.7 is the addition of `--build-arg env=dev` to the `dup build` command. This is a temporary measure until I expose build-args to the user via the `.up.json` file. This feature means you **need** to have this line in your base `Dockerfile`:
 
 ```Dockerfile
@@ -126,6 +132,14 @@ You'll need `make`, `nim` and it's package manager `nimble`. Clone the repositor
 ### Linux
 
 If you're building natively, then you can follow the [same instructions](#os-x) as OSX. If you're running OSX but want to cross-compile, run `make linux`.
+
+### Release builds
+
+```sh
+$ make release
+```
+
+Linux builds are `-d:release` by default.
 
 ## License
 

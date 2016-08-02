@@ -1,4 +1,4 @@
-NIM_OPTS=--parallelBuild:1
+NIM_OPTS=--parallelBuild:1 --define:nimOldSplit
 APP_NAME=dup
 BIN_DIR=build
 SRC_DIR=src
@@ -16,7 +16,10 @@ linux:
 	docker build -t dup:latest .
 	docker run --rm -v $(CURDIR)/build/linux/:/build dup:latest cp /dup/build/dup /build/dup
 
+release:
+	nim c $(NIM_OPTS) -d:release --out:$(BIN_DIR)/$(APP_NAME) $(SRC_DIR)/$(APP_NAME)
+
 $(BIN_DIR)/$(APP_NAME): $(wildcard $SRC_DIR/**/*.nim)
 	nim c $(NIM_OPTS) --out:$(BIN_DIR)/$(APP_NAME) $(SRC_DIR)/$(APP_NAME)
 
-.PHONY: all clean run
+.PHONY: all clean run release linux

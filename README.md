@@ -7,7 +7,7 @@ Usage:
   dup up                   Starts the containers
   dup down                 Stops and removes the containers
   dup init                 Initialises the "-data" container
-  dup status               Not yet implemented
+  dup status               Checks status of the "-web" and "-db" containers
   dup build [--no-cache]   Builds the web container's image
   dup (-h | --help)        Prints this help message
   dup --version            Prints the installed version
@@ -17,7 +17,13 @@ Usage:
 
 ## New features
 
-### v0.3.9
+### v0.3.11
+
+This release fixes the issues with orphan containers caused by a missing flag in the `docker rm` command, run with `dup down`.
+
+This release also adds basic support for `dup status`, to check whether the web and database containers are running.
+
+### v0.3.10
 
 This release added support for the official PostgreSQL Docker image, to allow the usage of version 9.5 (for it's `jsonb` support). In the future, you will be able to specify which point release of PostgreSQL your project needs.
 

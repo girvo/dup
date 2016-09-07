@@ -1,5 +1,6 @@
 # Nim build cache
 nimcache
+nimsuggest.log
 
 # Built binaries
 /build

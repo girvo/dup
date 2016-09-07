@@ -12,7 +12,7 @@ import random
 import net
 
 ## Define our version constant for re-use
-const version = "dup 0.3.10"
+const version = "dup 0.3.11"
 
 ## Define our docopt parsing schema
 let doc = """
@@ -191,6 +191,15 @@ proc startWeb(project: string, portMapping="", folderMapping: string, env: JsonN
   if exitCode != 0:
     echo("Error: Starting web server failed. Check the output above.")
 
+proc inspectContainer(containerName: string): JsonNode =
+  try:
+    let (output, exitCode) = execCmdEx("docker inspect " & containerName)
+    if exitCode != 0:
+      raise newException(IOError, "docker-inspect failed")
+    result = parseJson(output)
+  except:
+    result = parseJson("[]")
+
 # Check our Dockerfile and .up.json files exist
 checkDockerfile()
 let config = checkAndParseDupFile()
@@ -279,16 +288,19 @@ if args["down"]:
 
   echo("Stopping and removing running containers...")
   var
-    stopWeb = "docker stop " & config["project"].getStr() & "-web"
+    # stopWeb timeout of zero to stop the container immediately
+    stopWeb = "docker stop -t 0 " & config["project"].getStr() & "-web"
+    # stopDb does not use a timeout to avoid data corruption
     stopDb = "docker stop " & config["project"].getStr() & "-db"
-    rmWeb = "docker rm " & config["project"].getStr() & "-web"
-    rmDb = "docker rm " & config["project"].getStr() & "-db"
+    # rmWeb and rmDb both use -v to remove the linked volumes, avoiding orphans
+    rmWeb = "docker rm -v " & config["project"].getStr() & "-web"
+    rmDb = "docker rm -v " & config["project"].getStr() & "-db"
 
   echo("Stopping web server..")
   discard execCmd(stopWeb)
 
   if config["db"]["type"].getStr() != "none":
-    echo("Stopping database...")
+    echo("Gracefully stopping database...")
     discard execCmd(stopDb)
 
   echo("Removing web server...")
@@ -319,7 +331,22 @@ if args["build"]:
   quit(0)
 
 if args["status"]:
-  echo("Yet to be implemented.")
+  ## Pull project name from the config
+  var project: string = config["project"].getStr()
+  ## Always inspect the web container first
+  var web = inspectContainer(project & "-web")
+
+  ## Inspect the DB because inspectContainer is now robust to failure
+  var db = inspectContainer(project & "-db")
+
+  if web.len > 0:
+    echo("Web:\trunning")
+  else:
+    echo("Web:\tnot running")
+  if db.len > 0:
+    echo("DB:\trunning")
+  else:
+    echo("DB:\tnot running")
   quit(0)
 
 if args["bash"]:

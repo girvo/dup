@@ -1,6 +1,9 @@
 # Nim build cache
 nimcache
 nimsuggest.log
+.vscode/*
+!.vscode/settings.json
+!.vscode/tasks.json
 
 # Built binaries
 /build

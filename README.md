@@ -17,6 +17,10 @@ Usage:
 
 ## New features
 
+### v0.3.12
+
+Changed the `env` build argument to be `develop` to match Studio None's internal infrastructure
+
 ### v0.3.11
 
 This release fixes the issues with orphan containers caused by a missing flag in the `docker rm` command, run with `dup down`.

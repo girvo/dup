@@ -10,9 +10,10 @@ import json
 import docopt
 import random
 import net
+import terminal
 
 ## Define our version constant for re-use
-const version = "dup 0.3.11"
+const version = "dup 0.3.12"
 
 ## Define our docopt parsing schema
 let doc = """
@@ -179,6 +180,12 @@ proc buildEnv(envDict: JsonNode): string =
     env = env & "-e " & $k & "=" & $v & " "
   return env
 
+proc buildBuildArgs(buildArgs: JsonNode): string =
+  var buildArgsFlat = ""
+  for k, v in json.pairs(buildArgs):
+    buildArgsFlat = buildArgsFlat & "--build-arg " & $k & "=" & $v & " "
+  return buildArgsFlat
+
 proc startWeb(project: string, portMapping="", folderMapping: string, env: JsonNode, hasDB: bool = true) =
   echo "Starting web server..."
   let
@@ -200,7 +207,22 @@ proc inspectContainer(containerName: string): JsonNode =
   except:
     result = parseJson("[]")
 
-# Check our Dockerfile and .up.json files exist
+## Writes out a given name and status boolean pair
+## "true": running (green)
+## "false": not running (red)
+proc writeStatus(name: string, status: bool) =
+  writeStyled(name)
+  if status:
+    setForegroundColor(fgGreen)
+    stdout.write("running")
+  else:
+    setForegroundColor(fgRed)
+    stdout.write("not running")
+  resetAttributes()
+  stdout.write("\n")
+
+## Check our Dockerfile and .up.json files exist
+## Bail out if they don't
 checkDockerfile()
 let config = checkAndParseDupFile()
 
@@ -208,7 +230,8 @@ let config = checkAndParseDupFile()
 ## Command definitions
 ##
 
-if args["init"]:
+## Initialise the database
+proc init() =
   if checkStateFile():
     echo("Error: Docker Up has already been initalised.")
     echo("To rebuild the data-volume container, remove the " & config["project"].getStr() & "-data container, and delete the .up.state file.")
@@ -248,10 +271,18 @@ if args["init"]:
     quit(252)
   quit(0)
 
-###
-# dup up
-##
-if args["up"]:
+## Checks the current status of each container and prints to stdout
+proc printStatus() =
+  let project = config["project"].getStr()
+  let web = inspectContainer(project & "-web")
+  writeStatus("Web: ", web.len > 0)
+  if config["db"]["type"].getStr() != "none":
+    let db = inspectContainer(project & "-db")
+    writeStatus("DB:  ", db.len > 0)
+  quit(0)
+
+## Starts the web container, and database container if configured
+proc up() =
   if not checkStatefile():
     echo("Error: Docker Up has not been initialised. Run \"dup init\".")
     quit(252)
@@ -281,7 +312,8 @@ if args["up"]:
     quit(252)
   quit(0)
 
-if args["down"]:
+## Stops and removes the containers
+proc down() =
   if not checkStatefile():
     echo("Error: Docker Up has not been initialised. Run \"dup init\".")
     quit(252)
@@ -313,16 +345,24 @@ if args["down"]:
   echo("Done.")
   quit(0)
 
-if args["build"]:
+## Builds the image, passing build arguments in
+proc build() =
   echo("Building latest image...")
-  var df = ""
-  if config.hasKey("dockerfile"): df = "-f " & config["dockerfile"].getStr()
+  var dockerfile = ""
+  if config.hasKey("dockerfile"): dockerfile = "-f " & config["dockerfile"].getStr()
 
-  var command = ""
-  if args["--no-cache"]:
-    command = "docker build --build-arg env=dev --no-cache " & df & " -t " & config["project"].getStr() & ":latest ."
-  else:
-    command = "docker build --build-arg env=dev " & df & " -t " & config["project"].getStr() & ":latest ."
+  # Handles getting the env object
+  var rawBuildArgs = newJObject()
+  if config.hasKey("buildArgs"):
+    rawBuildArgs = config["buildArgs"]
+    if rawBuildArgs.hasKey("env") == false:
+      ## Set the "env" build-arg to "dev" if it's not in rawBuildArgs
+      rawBuildArgs["env"] = %"dev"
+  var buildArgs = buildBuildArgs(rawBuildArgs)
+
+  let projectTag = config["project"].getStr() & ":latest"
+  let cacheOpt = if args["--no-cache"]: "--no-cache" else: ""
+  let command = ["docker build", buildArgs, cacheOpt, dockerfile, "-t", projectTag].join(" ")
 
   let exitCode = execCmd(command)
   if exitCode != 0:
@@ -330,26 +370,8 @@ if args["build"]:
   echo("Done.")
   quit(0)
 
-if args["status"]:
-  ## Pull project name from the config
-  var project: string = config["project"].getStr()
-  ## Always inspect the web container first
-  var web = inspectContainer(project & "-web")
-
-  ## Inspect the DB because inspectContainer is now robust to failure
-  var db = inspectContainer(project & "-db")
-
-  if web.len > 0:
-    echo("Web:\trunning")
-  else:
-    echo("Web:\tnot running")
-  if db.len > 0:
-    echo("DB:\trunning")
-  else:
-    echo("DB:\tnot running")
-  quit(0)
-
-if args["bash"]:
+## Gives the user a shell prompt in the given container
+proc bash() =
   if args["web"]:
     echo("Entering web server container...")
     discard execCmd("docker exec -it " & config["project"].getStr() & "-web bash")
@@ -365,7 +387,8 @@ if args["bash"]:
   echo("Error: You must specify which container: \"dup bash web\" or \"dup bash db\"")
   quit(250)
 
-if args["sql"]:
+## Accesses the database's SQL prompt via docker exec
+proc sql() =
   case config["db"]["type"].getStr():
   of "mysql":
     discard execCmd("docker exec -it " & config["project"].getStr() & "-db mysql")
@@ -376,3 +399,15 @@ if args["sql"]:
   else:
     echo("Not implemented yet.")
     quit(252)
+
+##
+## Command bindings
+##
+
+if args["init"]: init()
+if args["status"]: printStatus()  ## TODO: Refactor to allow for JSON output
+if args["up"]: up()
+if args["down"]: down()
+if args["build"]: build()
+if args["bash"]: bash()
+if args["sql"]: sql()

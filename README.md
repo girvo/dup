@@ -19,7 +19,9 @@ Usage:
 
 ### v0.3.12
 
-Changed the `env` build argument to be `develop` to match Studio None's internal infrastructure
+Changed the `env` build argument to be `develop` to match Studio None's internal infrastructure.
+
+Added `buildArgs` option to `.up.json`, follows the same format as `env` but is passed as a `--build-arg name=value` pair when `dup build` is executed.
 
 ### v0.3.11
 

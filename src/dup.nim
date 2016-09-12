@@ -210,7 +210,7 @@ proc inspectContainer(containerName: string): JsonNode =
 ## Checks the result of "docker inspect <container-name>" to see if it's running
 ## Assumes that the first object in the array returned by "inspect" is the
 ## container in question
-proc containerIsRunning(inspectNode: JsonNode): bool =
+proc isContainerRunning(inspectNode: JsonNode): bool =
   if inspectNode.len == 0:
     return false
   let running = inspectNode[0]{"State", "Running"}
@@ -286,10 +286,10 @@ proc init() =
 proc printStatus() =
   let project = config["project"].getStr()
   let web = inspectContainer(project & "-web")
-  writeStatus("Web: ", containerIsRunning(web))
+  writeStatus("Web: ", isContainerRunning(web))
   if config["db"]["type"].getStr() != "none":
     let db = inspectContainer(project & "-db")
-    writeStatus("DB:  ", containerIsRunning(db))
+    writeStatus("DB:  ", isContainerRunning(db))
   quit(0)
 
 ## Starts the web container, and database container if configured

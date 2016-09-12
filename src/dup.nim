@@ -207,6 +207,9 @@ proc inspectContainer(containerName: string): JsonNode =
   except:
     result = parseJson("[]")
 
+proc containerIsRunning(inspectNode: JsonNode): bool =
+  return inspectNode.len > 0 and inspectNode[0]{"State", "Running"}.bval == true
+
 ## Writes out a given name and status boolean pair
 ## "true": running (green)
 ## "false": not running (red)
@@ -270,9 +273,6 @@ proc init() =
     echo("Error: Invalid database type specified in config.")
     quit(252)
   quit(0)
-
-proc containerIsRunning(inspectNode: JsonNode): bool =
-  return inspectNode.len > 0 and inspectNode[0]{"State", "Running"}.bval == true
 
 ## Checks the current status of each container and prints to stdout
 proc printStatus() =

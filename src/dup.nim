@@ -271,14 +271,17 @@ proc init() =
     quit(252)
   quit(0)
 
+proc containerIsRunning(inspectNode: JsonNode): bool =
+  return inspectNode.len > 0 and inspectNode[0]{"State", "Running"}.bval == true
+
 ## Checks the current status of each container and prints to stdout
 proc printStatus() =
   let project = config["project"].getStr()
   let web = inspectContainer(project & "-web")
-  writeStatus("Web: ", web.len > 0)
+  writeStatus("Web: ", containerIsRunning(web))
   if config["db"]["type"].getStr() != "none":
     let db = inspectContainer(project & "-db")
-    writeStatus("DB:  ", db.len > 0)
+    writeStatus("DB:  ", containerIsRunning(db))
   quit(0)
 
 ## Starts the web container, and database container if configured

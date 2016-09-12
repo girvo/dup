@@ -13,7 +13,7 @@ import net
 import terminal
 
 ## Define our version constant for re-use
-const version = "dup 0.3.12"
+const version = "dup 0.4.0"
 
 ## Define our docopt parsing schema
 let doc = """
@@ -373,7 +373,7 @@ proc build() =
 
   let projectTag = config["project"].getStr() & ":latest"
   let cacheOpt = if args["--no-cache"]: "--no-cache" else: ""
-  let command = ["docker build", buildArgs, cacheOpt, dockerfile, "-t", projectTag].join(" ")
+  let command = ["docker build", buildArgs, cacheOpt, dockerfile, "-t", projectTag, "."].join(" ")
 
   let exitCode = execCmd(command)
   if exitCode != 0:

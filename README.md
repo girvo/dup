@@ -15,72 +15,32 @@ Usage:
 
 `dup` is a tiny wrapper over Docker that loads a declarative JSON file for a given project to manage containers (especially stateful database containers) in a sane way. It was created due to frustration with [docker-compose](https://docs.docker.com/compose/) and it's issues with volume-only containers: a prerequisite for easy local web development. Three containers are created, prefixed with your declared project name (no defaulting to folder names here!): `-web`, `-db` and `-data`.
 
-## New features
-
-### v0.3.12
-
-Changed the `env` build argument to be `develop` to match Studio None's internal infrastructure.
-
-Added `buildArgs` option to `.up.json`, follows the same format as `env` but is passed as a `--build-arg name=value` pair when `dup build` is executed.
-
-### v0.3.11
-
-This release fixes the issues with orphan containers caused by a missing flag in the `docker rm` command, run with `dup down`.
-
-This release also adds basic support for `dup status`, to check whether the web and database containers are running.
-
-### v0.3.10
-
-This release added support for the official PostgreSQL Docker image, to allow the usage of version 9.5 (for it's `jsonb` support). In the future, you will be able to specify which point release of PostgreSQL your project needs.
-
-### v0.3.7
-
-The main new feature in v0.3.7 is the addition of `--build-arg env=dev` to the `dup build` command. This is a temporary measure until I expose build-args to the user via the `.up.json` file. This feature means you **need** to have this line in your base `Dockerfile`:
-
-```Dockerfile
-ARG env
-```
-
-This is the bare minimum. You will likely want to instead do the following:
-
-```Dockerfile
-ARG env=prod
-```
-
-This will default the argument to `prod`, and fix the `One or more build-args [env] were not consumed, failing build.` error that will otherwise be triggered. An example of how to leverage this feature to allow for a singular production `Dockerfile` that has developer tools added on top, assuming two files: `conf/start.prod.sh` which is the standard entry-point, and `conf/start.dev.sh` which is the development entry-point that adds extra tools is as follows:
-
-```Dockerfile
-###
-# This is both a test of Skate as a tool, as well as build-args for Docker
-##
-FROM studionone/node6:latest
-
-# Use a different entrypoint for development vs production
-ARG env=prod
-ADD conf/start.$env.sh /start.sh
-RUN chmod +x /start.sh
-
-ADD code /app
-WORKDIR /app
-RUN npm install
-
-EXPOSE 8080
-
-ENTRYPOINT /start.sh
-```
-
 ## `.up.json`
 
-In the root of your project, next to the `Dockerfile`, you will need a JSON file `.up.json`, that follows this format:
+In the root of your project, next to the `Dockerfile`, you will need a JSON file `.up.json`, that contains at least this:
 
 ```json
 {
     "project": "project-name-here",
-    "port": "host:container",
     "db": {
         "type": "mysql-or-postgres",
         "name": "database-name",
         "pass": "password-for-admin-or-root-user"
+    }
+}
+```
+
+And can also contain these optional fields:
+
+```json
+{
+    "volume": "local-folder:/container/folder",
+    "port": "host:container",
+    "env": {
+        "ENV_VAR": "value"
+    },
+    "buildArgs": {
+        "example": "build-arg"
     }
 }
 ```

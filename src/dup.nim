@@ -207,8 +207,16 @@ proc inspectContainer(containerName: string): JsonNode =
   except:
     result = parseJson("[]")
 
+## Checks the result of "docker inspect <container-name>" to see if it's running
+## Assumes that the first object in the array returned by "inspect" is the
+## container in question
 proc containerIsRunning(inspectNode: JsonNode): bool =
-  return inspectNode.len > 0 and inspectNode[0]{"State", "Running"}.bval == true
+  if inspectNode.len == 0:
+    return false
+  let running = inspectNode[0]{"State", "Running"}
+  if running == nil:
+    return false
+  return running.bval
 
 ## Writes out a given name and status boolean pair
 ## "true": running (green)

@@ -12,8 +12,11 @@ import random
 import net
 import terminal
 
+import ./private/types
+import ./database
+
 ## Define our version constant for re-use
-const version = "dup 0.4.0"
+const version = "dup 0.4.1"
 
 ## Define our docopt parsing schema
 let doc = """

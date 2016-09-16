@@ -9,47 +9,30 @@ import ./private/types
 
 proc newDBMySQL* (password: string, name: string): DatabaseConfig =
   return DatabaseConfig(
-    kind: DatabaseType.MySQL,
+    kind: MySQL,
     username: "admin",
     password: password,
     name: name)
 
 proc newDBPostgreSQL* (username: string, password: string, name: string): DatabaseConfig =
   return DatabaseConfig(
-    kind: DatabaseType.PostgreSQL,
+    kind: PostgreSQL,
     username: username,
     password: password,
     name: name)
 
 proc newDBNone* (): DatabaseConfig =
-  return DatabaseConfig(
-    kind: DatabaseType.None,
-    username: "",
-    password: "")
+  return DatabaseConfig(kind: None)
 
-proc getPassword (config: JsonNode): string =
-  let password = config.getOrDefault("password")
-  if password.isNil:
+## Gets an item from a given JsonNode, checking for nil
+## Raises a DBConfigError if there is no specified key with that name
+proc getString (config: JsonNode, key: string): string =
+  let s = config.getOrDefault(key)
+  if s.isNil:
     raise newException(
       DBConfigError,
-      "No 'password' key defined in 'db' config object")
-  else: return password.str
-
-proc getName (config: JsonNode): string =
-  let name = config.getOrDefault("name")
-  if name.isNil:
-    raise newException(
-      DBConfigError,
-      "No 'name' key defined in 'db' config object")
-  else: return name.str
-
-proc getUsername (config: JsonNode): string =
-  let username = config.getOrDefault("user")
-  if username.isNil:
-    raise newException(
-      DBConfigError,
-      "No 'name' key defined in 'db' config object")
-  else: return username.str
+      "No '" & key & "' key defined in the 'db' config object")
+  else: return s.str
 
 proc newDatabaseConfig* (config: JsonNode): DatabaseConfig =
   ## Proc assumes the "db" object from the .up.json has been passed in
@@ -62,14 +45,14 @@ proc newDatabaseConfig* (config: JsonNode): DatabaseConfig =
     case dbType.str.toLowerAscii()
     of "mysql":
       let
-        password = getPassword(config)
-        name = getName(config)
+        password = config.getString("password")
+        name = config.getString("name")
       return newDBMySQL(password, name)
     of "postgres":
       let
-        password = getPassword(config)
-        name = getName(config)
-        username = getUsername(config)
+        password = config.getString("password")
+        name = config.getString("name")
+        username = config.getString("user")
       return newDBPostgreSQL(username, password, name)
     of "none":
       return newDBNone()
@@ -79,12 +62,12 @@ proc newDatabaseConfig* (config: JsonNode): DatabaseConfig =
         "Invalid 'type' value specified in 'db' config object")
 
 proc getDataVolumeBinding* (conf: DatabaseConfig): string =
-  case conf.kind
-  of DatabaseType.MySQL:
+  case conf.getKind
+  of MySQL:
     return "/var/lib/mysql"
-  of DatabaseType.PostgreSQL:
+  of PostgreSQL:
     return "/var/lib/postgres"
-  of DatabaseType.None:
+  of None:
     return ""
   else:
     raise newException(

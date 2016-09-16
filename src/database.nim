@@ -7,68 +7,40 @@ import json
 import strutils
 import ./private/types
 
-proc newDBMySQL* (password: string, name: string): DatabaseConfig =
-  return DatabaseConfig(
-    kind: MySQL,
-    username: "admin",
-    password: password,
-    name: name)
-
-proc newDBPostgreSQL* (username: string, password: string, name: string): DatabaseConfig =
-  return DatabaseConfig(
-    kind: PostgreSQL,
-    username: username,
-    password: password,
-    name: name)
-
-proc newDBNone* (): DatabaseConfig =
-  return DatabaseConfig(kind: None)
-
-## Gets an item from a given JsonNode, checking for nil
-## Raises a DBConfigError if there is no specified key with that name
-proc getString (config: JsonNode, key: string): string =
-  let s = config.getOrDefault(key)
-  if s.isNil:
-    raise newException(
-      DBConfigError,
-      "No '" & key & "' key defined in the 'db' config object")
-  else: return s.str
-
-proc newDatabaseConfig* (config: JsonNode): DatabaseConfig =
+proc newDBConfig*(config: JsonNode): DatabaseConfig =
+  ## Instantiates the DatabaseConfig object from a parsed JsonNode
   ## Proc assumes the "db" object from the .up.json has been passed in
   let dbType = config.getOrDefault("type")
   if dbType.isNil:
     raise newException(
       DBConfigError,
       "No 'type' key specified in 'db' config object")
+  # Match the db.type string to our database types
+  case dbType.str.toLowerAscii()
+  of "mysql":
+    result = MySQL.newDBConfig(
+      config.getStr("password"),
+      config.getStr("name"))
+  of "postgres":
+    result = PostgreSQL.newDBConfig(
+      config.getStr("user"),
+      config.getStr("password"),
+      config.getStr("name"))
+  of "none":
+    result = None.newDBConfig()
   else:
-    case dbType.str.toLowerAscii()
-    of "mysql":
-      let
-        password = config.getString("password")
-        name = config.getString("name")
-      return newDBMySQL(password, name)
-    of "postgres":
-      let
-        password = config.getString("password")
-        name = config.getString("name")
-        username = config.getString("user")
-      return newDBPostgreSQL(username, password, name)
-    of "none":
-      return newDBNone()
-    else:
-      raise newException(
-        DBConfigError,
-        "Invalid 'type' value specified in 'db' config object")
+    raise newException(
+      DBConfigError,
+      "Invalid 'type' value specified in 'db' config object")
 
-proc getDataVolumeBinding* (conf: DatabaseConfig): string =
+proc getDataVolumeBinding*(conf: DatabaseConfig): string =
   case conf.getKind
   of MySQL:
-    return "/var/lib/mysql"
+    result = "/var/lib/mysql"
   of PostgreSQL:
-    return "/var/lib/postgres"
+    result = "/var/lib/postgres"
   of None:
-    return ""
+    result = ""
   else:
     raise newException(
       DBConfigError,

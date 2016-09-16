@@ -271,7 +271,8 @@ proc printStatus() =
   let project = config["project"].getStr()
   let web = inspectContainer(project & "-web")
   writeStatus("Web: ", isContainerRunning(web))
-  if config["db"]["type"].getStr() != "none":
+  # if config["db"]["type"].getStr() != "none":
+  if dbConf.kind != None:
     let db = inspectContainer(project & "-db")
     writeStatus("DB:  ", isContainerRunning(db))
   quit(0)

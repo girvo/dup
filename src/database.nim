@@ -16,16 +16,16 @@ proc newDBConfig*(config: JsonNode): DatabaseConfig =
       DBConfigError,
       "No 'type' key specified in 'db' config object")
   # Match the db.type string to our database types
-  case dbType.str.toLowerAscii()
+  case dbType.getStr().toLowerAscii()
   of "mysql":
     result = MySQL.newDBConfig(
-      config.getStr("password"),
-      config.getStr("name"))
+      config.getOrDefault("pass").getStr(),
+      config.getOrDefault("name").getStr())
   of "postgres":
     result = PostgreSQL.newDBConfig(
-      config.getStr("user"),
-      config.getStr("password"),
-      config.getStr("name"))
+      config.getOrDefault("pass").getStr(),
+      config.getOrDefault("name").getStr(),
+      config.getOrDefault("user").getStr())
   of "none":
     result = None.newDBConfig()
   else:
@@ -33,8 +33,8 @@ proc newDBConfig*(config: JsonNode): DatabaseConfig =
       DBConfigError,
       "Invalid 'type' value specified in 'db' config object")
 
-proc getDataVolumeBinding*(conf: DatabaseConfig): string =
-  case conf.getKind
+proc getDataVolumeBinding* (conf: DatabaseConfig): string =
+  case conf.kind
   of MySQL:
     result = "/var/lib/mysql"
   of PostgreSQL:

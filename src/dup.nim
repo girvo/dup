@@ -48,53 +48,34 @@ if args["-v"] or args["--version"]:
 const dupFile = ".up.json"
 const stateFile = ".up.state"
 
-proc errMissingKey(key: string, shouldQuit: bool = false) =
-  echo("Error: Your \".up.json\" file is missing the \"" & key & "\" key.")
-  if shouldQuit: quit(252)
+var
+  dbConf = newDBConfig(None) ## Default the database config to "None"
 
-proc errMissingKey(key: string, ctx: string, shouldQuit: bool = false) =
-  echo("Error: Missing \"" & key & "\" key in \"" & ctx & "\".")
-  if shouldQuit: quit(251)
+proc errMissingKey(key: string, shouldQuit: bool = false) =
+  echo("Error: Your \".up.json\" file is missing the \"" & key & "\" key")
+  if shouldQuit: quit(252)
 
 proc checkAndParseDupFile(): JsonNode =
   if not existsFile(getCurrentDir() / dupFile):
-    echo("Error: Missing \".up.json\" in current directory.")
+    echo("Error: No '.up.json' found in current directory")
     quit(255)
-  let conf = json.parseFile(getCurrentDir() / dupFile)
-  if not conf.hasKey("project"):
+  result = json.parseFile(getCurrentDir() / dupFile)
+  if not result.hasKey("project"):
     errMissingKey("project", true)
-  if not conf.hasKey("db"):
+  if not result.hasKey("db"):
     errMissingKey("db", true)
-  if not conf["db"].hasKey("type"):
-    errMissingKey("type", "db", true)
-  case conf["db"]["type"].getStr():
-  of "mysql":
-    if not conf["db"].hasKey("name"):
-      errMissingKey("name", "db", true)
-    if not conf["db"].hasKey("pass"):
-      errMissingkey("pass", "db", true)
-  of "postgres":
-    var shouldQuit = false
-    if not conf["db"].hasKey("name"):
-      errMissingKey("name", "db")
-      shouldQuit = true
-    if not conf["db"].hasKey("user"):
-      errMissingKey("user", "db")
-      shouldQuit = true
-    if not conf["db"].hasKey("pass"):
-      errMissingkey("pass", "db")
-      shouldQuit = true
-    if shouldQuit: quit(251)
-  of "none":
-    discard
-  else:
-    echo("Error: Invalid \"type\" key in \"db\" object.")
+  try:
+    dbConf = newDBConfig(result["db"]) # Set our database config
+  except DBConfigError:
+    echo("Error: In 'db', " & getCurrentExceptionMsg())
     quit(251)
-  return conf
+  except:
+    echo("Fatal: " & getCurrentExceptionMsg())
+    quit(250)
 
 proc checkDockerfile() =
   if not existsFile(getCurrentDir() / "Dockerfile"):
-    echo("Error: Missing \"Dockerfile\" in current directory.")
+    echo("Error: Missing \"Dockerfile\" in current directory")
     quit(254)
 
 proc checkStatefile(): bool =
@@ -162,7 +143,7 @@ proc startMysql(project: string, dbname: string, dbpass: string) =
   let command = "docker run -d --name " & project & "-db --voluWemes-from " & project & "-data -e MYSQL_PASS=" & dbpass & " -e ON_CREATE_DB=" & dbname & " -p " & portFragment & " tutum/mysql"
   let exitCode = execCmd command
   if exitCode != 0:
-    echo("Error: Starting MySQL failed. Check the output above.")
+    echo("Error: Starting MySQL failed. Check the output above")
     quit(exitCode)
   echo("Success: MySQL started, and exposed on host port " & $chosenPort)
 
@@ -173,7 +154,7 @@ proc startPostgres(project: string, dbname: string, dbuser: string, dbpass: stri
   let command = "docker run -d --name " & project & "-db --volumes-from " & project & "-data -e POSTGRES_PASSWORD=" & dbpass & " -e POSTGRES_DB=" & dbname & " -e POSTGRES_USER=" & dbuser & " -p " & portFragment & " postgres:9.5"
   let exitCode = execCmd command
   if exitCode != 0:
-    echo("Error: Starting Postgres failed. Check the output above.")
+    echo("Error: Starting Postgres failed. Check the output above")
     quit(exitCode)
   echo("Success: Postgres started, and exposed on host port " & $chosenPort)
 
@@ -199,7 +180,7 @@ proc startWeb(project: string, portMapping="", folderMapping: string, env: JsonN
     command = "docker run -d -h " & project & ".docker --name " & project & "-web " & port & env & folder & link & " -e TERM=xterm-256color -e VIRTUAL_HOST=" & project & ".docker " & project & ":latest"
     exitCode = execCmd command
   if exitCode != 0:
-    echo("Error: Starting web server failed. Check the output above.")
+    echo("Error: Starting web server failed. Check the output above")
 
 proc inspectContainer(containerName: string): JsonNode =
   try:
@@ -247,7 +228,7 @@ let config = checkAndParseDupFile()
 ## Initialise the database
 proc init() =
   if checkStateFile():
-    echo("Error: Docker Up has already been initalised.")
+    echo("Error: Docker Up has already been initalised")
     echo("To rebuild the data-volume container, remove the " & config["project"].getStr() & "-data container, and delete the .up.state file.")
     quit(253)
 
@@ -258,11 +239,11 @@ proc init() =
       command = "docker run -d -v /var/lib/mysql --name " & config["project"].getStr() & "-data --entrypoint /bin/echo tutum/mysql"
       exitCode = execCmd command
     if exitCode != 0:
-      echo("Error: An error occurred while creating the volume-only container. See the above output for details.")
+      echo("Error: An error occurred while creating the volume-only container. See the above output for details")
       quit(exitCode)
     else:
       buildStateFile()
-      echo("Done.")
+      echo("Done")
       quit(0)
   of "postgres":
     echo("Initialising Postgres volume-only container...")
@@ -270,18 +251,18 @@ proc init() =
       command = "docker run -d -v /var/lib/postgres --name " & config["project"].getStr() & "-data -e POSTGRES_PASSWORD=" & config["db"]["pass"].getStr() & " -e POSTGRES_DB=" & config["db"]["name"].getStr() & " -e POSTGRES_USER=" & config["db"]["user"].getStr() & " --entrypoint /bin/echo postgres:9.5"
       exitCode = execCmd command
     if exitCode != 0:
-      echo("Error: An error occurred while creating the volume-only container. See the above output for details.")
+      echo("Error: An error occurred while creating the volume-only container. See the above output for details")
       quit(exitCode)
     else:
       buildStateFile()
       echo("Done.")
       quit(0)
   of "none":
-    echo("No database requested. If you change this in the future, you will need to reinitialise your dup project.")
+    echo("No database requested. If you change this in the future, you will need to reinitialise your dup project")
     buildStateFile()
     quit(0)
   else:
-    echo("Error: Invalid database type specified in config.")
+    echo("Error: Invalid database type specified in config")
     quit(252)
   quit(0)
 
@@ -298,7 +279,7 @@ proc printStatus() =
 ## Starts the web container, and database container if configured
 proc up() =
   if not checkStatefile():
-    echo("Error: Docker Up has not been initialised. Run \"dup init\".")
+    echo("Error: Docker Up has not been initialised. Run 'dup init'")
     quit(252)
 
   # Handles getting the env object
@@ -322,14 +303,14 @@ proc up() =
   of "none":
     startWeb(project = config["project"].getStr(), portMapping, folderMapping = folderMapping, env = envDict, hasDB = false)
   else:
-    echo("Error: Invalid database type specified.")
+    echo("Error: Invalid database type specified")
     quit(252)
   quit(0)
 
 ## Stops and removes the containers
 proc down() =
   if not checkStatefile():
-    echo("Error: Docker Up has not been initialised. Run \"dup init\".")
+    echo("Error: Docker Up has not been initialised. Run \"dup init\"")
     quit(252)
 
   echo("Stopping and removing running containers...")
@@ -342,7 +323,7 @@ proc down() =
     rmWeb = "docker rm -v " & config["project"].getStr() & "-web"
     rmDb = "docker rm -v " & config["project"].getStr() & "-db"
 
-  echo("Stopping web server..")
+  echo("Stopping web server...")
   discard execCmd(stopWeb)
 
   if config["db"]["type"].getStr() != "none":
@@ -381,7 +362,7 @@ proc build() =
   let exitCode = execCmd(command)
   if exitCode != 0:
     quit(exitCode)
-  echo("Done.")
+  echo("Done")
   quit(0)
 
 ## Gives the user a shell prompt in the given container
@@ -392,7 +373,7 @@ proc bash() =
     quit(0)
   if args["db"]:
     if config["db"]["type"].getStr() == "none":
-      echo("No database container exists for this project.")
+      echo("No database container exists for this project")
       quit(0)
     echo("Entering database container...")
     discard execCmd("docker exec -it " & config["project"].getStr() & "-db bash")
@@ -411,8 +392,8 @@ proc sql() =
     discard execCmd("docker exec -it -u postgres " & config["project"].getStr() & "-db psql")
     quit(0)
   else:
-    echo("Not implemented yet.")
-    quit(252)
+    echo("Error: Not implemented for this database type")
+    quit(251)
 
 ##
 ## Command bindings

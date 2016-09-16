@@ -11,46 +11,52 @@ type
     ## DatabaseConfig ADT
     case kind: DatabaseType
     of PostgreSQL:
-      name*: string
-    else:
-      discard
-    username*: string
+      username*: string
+    else: discard
+    # Shared properties across the ADT
+    name*: string
     password*: string
 
-  ## Error types
-  DBError* = object of IOError
-  DBConfigError* = object of DBError
+type
+  DBError* = object of IOError ## Top-level database error
+  DBConfigError* = object of DBError ## Database configuration error
 
-proc getKind*(s: DatabaseConfig): DatabaseType = s.kind
+proc kind*(s: DatabaseConfig): DatabaseType =
+  ## Getter for the "kind" property
+  result = s.kind
 
 proc newDBNone(): DatabaseConfig =
   ## Creates a new DatabaseConfig of the "None" type
   result = DatabaseConfig(kind: None)
 
-proc newDBMySQL(password: string, name: string): DatabaseConfig =
+proc newDBMySQL(pass: string, name: string): DatabaseConfig =
   ## Creates a new DatabaseConfig of the "MySQL" type
+  if pass.len == 0: raise newException(DBConfigError, "'pass' must be set and non-empty")
+  if name.len == 0: raise newException(DBConfigError, "'name' must be set and non-empty")
   result = DatabaseConfig(
     kind: MySQL,
-    username: "admin",
-    password: password,
+    password: pass,
     name: name)
 
-proc newDBPostgreSQL(password: string, name: string, username: string): DatabaseConfig =
+proc newDBPostgreSQL(pass: string, name: string, user: string): DatabaseConfig =
   ## Creates a new DatabaseConfig of the "PostgreSQL" type
+  if pass.len == 0: raise newException(DBConfigError, "'pass' must be set and non-empty")
+  if name.len == 0: raise newException(DBConfigError, "'name' must be set and non-empty")
+  if user.len == 0: raise newException(DBConfigError, "'user' must be set and non-empty")
   result = DatabaseConfig(
     kind: PostgreSQL,
-    username: username,
-    password: password,
-    name: name)
+    password: pass,
+    name: name,
+    username: user)
 
-proc newDBConfig*(dbType: DatabaseType, username = "", password = "", name = ""): DatabaseConfig =
+proc newDBConfig*(dbType: DatabaseType, pass = "", name = "", user = ""): DatabaseConfig =
   ## Creates a new database configuration based on a given type param
   case dbType
   of MySQL:
-    result = newDBMySQL(password, name)
+    result = newDBMySQL(pass, name)
   of PostgreSQL:
-    result = newDBPostgreSQL(password, name, username)
+    result = newDBPostgreSQL(pass, name, user)
   of None:
     result = newDBNone()
   else:
-    raise newException(DBConfigError, "Invalid DatabaseType specified, please check your config")
+    raise newException(DBConfigError, "Unknown DatabaseType specified")

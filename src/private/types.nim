@@ -3,6 +3,11 @@
 ## Author: Josh Girvin <josh@jgirvin.com>
 ## License: MIT
 
+import future
+import json
+
+## Database types
+
 type
   DatabaseType* = enum
     ## Used for DatabaseConfig ADT
@@ -60,3 +65,30 @@ proc newDBConfig*(dbType: DatabaseType, pass = "", name = "", user = ""): Databa
     result = newDBNone()
   else:
     raise newException(DBConfigError, "Unknown DatabaseType specified")
+
+## Config types
+type
+  Arg* = tuple[
+    name: string,
+    value: string]
+  Args* = seq[Arg]
+  ProjectConfig* = ref object
+    name*: string
+    dbConf*: DatabaseConfig
+    envVars*: Args
+    buildArgs*: Args
+
+proc newArg*(name: string, value: string): Arg =
+  ## Create an arg given two strings
+  result = (
+    name: name,
+    value: value)
+
+proc newProjectConfig*(name: string, dbConf: DatabaseConfig, envVars: Args,
+                       buildArgs: Args): ProjectConfig =
+  ## Build a new project config
+  result = ProjectConfig(
+    name: name,
+    dbConf: dbConf,
+    envVars: envVars,
+    buildArgs: buildArgs)

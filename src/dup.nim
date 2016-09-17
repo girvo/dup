@@ -14,6 +14,7 @@ import terminal
 
 import ./private/types
 import ./database
+import ./config as conf
 
 ## Define our version constant for re-use
 const version = "dup 0.4.1"

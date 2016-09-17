@@ -70,6 +70,7 @@ type
   Args* = seq[Arg]
   ProjectConfig* = ref object
     name*: string
+    port*: string
     dbConf*: DatabaseConfig
     envVars*: Args
     buildArgs*: Args
@@ -84,11 +85,12 @@ proc newArg*(name: string, value: string): Arg =
     name: name,
     value: value)
 
-proc newProjectConfig*(name: string, dbConf: DatabaseConfig, envVars: Args,
-                       buildArgs: Args): ProjectConfig =
+proc newProjectConfig*(name: string, dbConf: DatabaseConfig, port: string,
+                       envVars: Args,buildArgs: Args): ProjectConfig =
   ## Build a new project config
   result = ProjectConfig(
     name: name,
+    port: port,
     dbConf: dbConf,
     envVars: envVars,
     buildArgs: buildArgs)

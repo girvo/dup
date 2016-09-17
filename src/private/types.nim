@@ -3,11 +3,7 @@
 ## Author: Josh Girvin <josh@jgirvin.com>
 ## License: MIT
 
-import future
-import json
-
 ## Database types
-
 type
   DatabaseType* = enum
     ## Used for DatabaseConfig ADT
@@ -77,6 +73,10 @@ type
     dbConf*: DatabaseConfig
     envVars*: Args
     buildArgs*: Args
+
+type
+  ConfigError* = object of IOError
+  ProjectConfigError* = object of ConfigError
 
 proc newArg*(name: string, value: string): Arg =
   ## Create an arg given two strings

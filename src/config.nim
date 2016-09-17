@@ -8,4 +8,9 @@ import json
 import ./private/types
 
 proc createProjectConfig*(raw: JsonNode, dbConf: DatabaseConfig): ProjectConfig =
-  result = newProjectConfig("", dbConf, @[], @[])
+  let name = raw.getOrDefault("project").getStr()
+  if name == "":
+    raise newException(
+      ProjectConfigError,
+      "'project' key ")
+  result = newProjectConfig(name, dbConf, @[], @[])

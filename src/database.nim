@@ -5,7 +5,7 @@
 
 import json
 import strutils
-import ./private/types
+import private/types
 
 proc newDBConfig*(config: JsonNode): DatabaseConfig =
   ## Instantiates the DatabaseConfig object from a parsed JsonNode

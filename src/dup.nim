@@ -12,9 +12,9 @@ import random
 import net
 import terminal
 
-import ./private/types
-import ./database
-from ./config import createProjectConfig
+import private/types
+import database
+from config import createProjectConfig
 
 ## Define our version constant for re-use
 const version = "dup 0.4.1"
@@ -51,12 +51,13 @@ const stateFile = ".up.state"
 
 var
   dbConf = newDBConfig(None) ## Default the database config to "None"
+  newConf: ProjectConfig
 
 proc errMissingKey(key: string, shouldQuit: bool = false) =
   echo("Error: Your \".up.json\" file is missing the \"" & key & "\" key")
   if shouldQuit: quit(252)
 
-proc checkAndParseDupFile(): JsonNode =
+proc checkAndParseDupFile(): JsonNode {.raises: [].} =
   if not existsFile(getCurrentDir() / dupFile):
     echo("Error: No '.up.json' found in current directory")
     quit(255)
@@ -67,9 +68,13 @@ proc checkAndParseDupFile(): JsonNode =
     errMissingKey("db", true)
   try:
     dbConf = newDBConfig(result["db"]) # Set our database config
+    newConf = createProjectConfig(result, dbConf)
   except DBConfigError:
     echo("Error: In 'db', " & getCurrentExceptionMsg())
     quit(251)
+  except ProjectConfigError:
+    echo("Error: In config, " & getCurrentExceptionMsg())
+    quit(252)
   except:
     echo("Fatal: " & getCurrentExceptionMsg())
     quit(250)

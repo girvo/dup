@@ -86,7 +86,7 @@ proc newArg*(name: string, value: string): Arg =
     value: value)
 
 proc newProjectConfig*(name: string, dbConf: DatabaseConfig, port: string,
-                       envVars: Args,buildArgs: Args): ProjectConfig =
+                       envVars: Args, buildArgs: Args): ProjectConfig {.raises: [].} =
   ## Build a new project config
   result = ProjectConfig(
     name: name,

@@ -5,9 +5,10 @@
 
 import future
 import json
-import ./private/types
+import private/types
 
-proc createProjectConfig*(raw: JsonNode, dbConf: DatabaseConfig): ProjectConfig =
+proc createProjectConfig*(raw: JsonNode, dbConf: DatabaseConfig): ProjectConfig
+                          {.raises: [ProjectConfigError].} =
   let name = raw.getOrDefault("project").getStr()
   if name == "":
     raise newException(ProjectConfigError, "'project' key ")

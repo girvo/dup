@@ -33,15 +33,20 @@ proc newDBConfig*(config: JsonNode): DatabaseConfig =
       DBConfigError,
       "Invalid 'type' value specified in 'db' config object")
 
-proc getDataVolumeBinding* (conf: DatabaseConfig): string =
+proc getVolumePath*(conf: DatabaseConfig): string {.raises: [].} =
   case conf.kind
   of MySQL:
     result = "/var/lib/mysql"
   of PostgreSQL:
     result = "/var/lib/postgres"
-  of None:
-    result = ""
   else:
-    raise newException(
-      DBConfigError,
-      "Invalid database type given")
+    result = ""
+
+proc getImageName*(conf: DatabaseConfig): string {.raises: [].} =
+  case conf.kind
+  of MySQL:
+    result = "tutum/mysql"
+  of PostgreSQL:
+    result = "postgres:9.5"
+  else:
+    result = ""

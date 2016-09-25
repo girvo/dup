@@ -14,7 +14,7 @@ import terminal
 
 import private/types
 import database
-from config import createProjectConfig
+import config
 
 ## Define our version constant for re-use
 const version = "dup 0.4.1"
@@ -84,8 +84,12 @@ proc checkDockerfile() =
     echo("Error: Missing \"Dockerfile\" in current directory")
     quit(254)
 
-proc checkStatefile(): bool =
-  return existsFile(getCurrentDir() / stateFile)
+proc checkStatefile(): bool {.raises: [].} =
+  try:
+    result = existsFile(getCurrentDir() / stateFile)
+  except:
+    echo("Fatal: " & getCurrentExceptionMsg())
+    quit(1)
 
 proc buildStatefile() =
   echo("Building .up.state file...")
@@ -225,66 +229,85 @@ proc writeStatus(name: string, status: bool) =
 ## Check our Dockerfile and .up.json files exist
 ## Bail out if they don't
 checkDockerfile()
-let config = checkAndParseDupFile()
+var oldConfig = checkAndParseDupFile()
 
 ##
 ## Command definitions
 ##
 
 ## Initialise the database
-proc init() =
+## TODO: Refactor this to remove the need for a state-file, check the Docker
+##       inspect output instead for the given container name
+proc init(conf: ProjectConfig) {.raises: [].} =
   if checkStateFile():
+    ## Exit out if there already is an .up.state file
     echo("Error: Docker Up has already been initalised")
-    echo("To rebuild the data-volume container, remove the " & config["project"].getStr() & "-data container, and delete the .up.state file.")
+    echo("To rebuild the data-volume container, remove the " & conf.data & " container, and delete the .up.state file.")
     quit(253)
-
-  case config["db"]["type"].getStr():
-  of "mysql":
-    echo("Initialising MySQL volume-only container...")
-    let
-      command = "docker run -d -v /var/lib/mysql --name " & config["project"].getStr() & "-data --entrypoint /bin/echo tutum/mysql"
-      exitCode = execCmd command
-    if exitCode != 0:
-      echo("Error: An error occurred while creating the volume-only container. See the above output for details")
-      quit(exitCode)
-    else:
-      buildStateFile()
-      echo("Done")
-      quit(0)
-  of "postgres":
-    echo("Initialising Postgres volume-only container...")
-    let
-      command = "docker run -d -v /var/lib/postgres --name " & config["project"].getStr() & "-data -e POSTGRES_PASSWORD=" & config["db"]["pass"].getStr() & " -e POSTGRES_DB=" & config["db"]["name"].getStr() & " -e POSTGRES_USER=" & config["db"]["user"].getStr() & " --entrypoint /bin/echo postgres:9.5"
-      exitCode = execCmd command
-    if exitCode != 0:
-      echo("Error: An error occurred while creating the volume-only container. See the above output for details")
-      quit(exitCode)
-    else:
-      buildStateFile()
-      echo("Done.")
-      quit(0)
-  of "none":
+  var
+    command: string = ""
+    shouldRunCommand: bool = false
+  # Initialise the correct volume-only container based on configured kind
+  case conf.dbConf.kind
+  of MySQL:
+    echo("Initialising " & $conf.dbConf.kind & " volume-only container..")
+    shouldRunCommand = true
+    command = join([
+      "docker run -d -v",
+      conf.dbConf.getVolumePath(),
+      "--name",
+      conf.data,
+      "--entrypoint",
+      "/bin/echo",
+      conf.dbConf.getImageName()
+    ], " ")
+  of PostgreSQL:
+    echo("Initialising " & $conf.dbConf.kind & " volume-only container..")
+    shouldRunCommand = true
+    command = join([
+      "docker run -d -v",
+      conf.dbConf.getVolumePath(),
+      "--name",
+      conf.data,
+      "-e POSTGRES_PASSWORD=" & conf.dbConf.password,
+      "-e POSTGRES_DB" & conf.dbConf.name,
+      "-e POSTGRES_USER" & conf.dbConf.username,
+      "--entrypoint",
+      "/bin/echo",
+      conf.dbConf.getImageName()
+    ], " ")
+  of None:
     echo("No database requested. If you change this in the future, you will need to reinitialise your dup project")
-    buildStateFile()
-    quit(0)
+    shouldRunCommand = false
   else:
     echo("Error: Invalid database type specified in config")
     quit(252)
-  quit(0)
+  # Now check if we should build the state file, and run our command
+  try:
+    if shouldRunCommand == true:
+      var exitCode = execCmd command
+      if exitCode != 0:
+        echo("Error: An error occurred while creating the volume-only container. See the above output for details")
+        quit(exitCode)
+    buildStatefile()
+    echo("Done")
+    quit(0)
+  except:
+    echo("Error: " & getCurrentExceptionMsg())
+    quit(1)
 
 ## Checks the current status of each container and prints to stdout
-proc printStatus() =
-  let project = config["project"].getStr()
-  let web = inspectContainer(project & "-web")
-  writeStatus("Web: ", isContainerRunning(web))
-  # if config["db"]["type"].getStr() != "none":
+proc printStatus(conf: ProjectConfig) =
+  var
+    currrent = inspectContainer(conf.web)
+  writeStatus("Web: ", isContainerRunning(currrent))
   if dbConf.kind != None:
-    let db = inspectContainer(project & "-db")
-    writeStatus("DB:  ", isContainerRunning(db))
+    currrent = inspectContainer(conf.db)
+    writeStatus("DB:  ", isContainerRunning(currrent))
   quit(0)
 
 ## Starts the web container, and database container if configured
-proc up() =
+proc up(conf: ProjectConfig) =
   if not checkStatefile():
     echo("Error: Docker Up has not been initialised. Run 'dup init'")
     quit(252)
@@ -315,7 +338,7 @@ proc up() =
   quit(0)
 
 ## Stops and removes the containers
-proc down() =
+proc down(conf: ProjectConfig) =
   if not checkStatefile():
     echo("Error: Docker Up has not been initialised. Run \"dup init\"")
     quit(252)
@@ -348,7 +371,7 @@ proc down() =
   quit(0)
 
 ## Builds the image, passing build arguments in
-proc build() =
+proc build(conf: ProjectConfig) =
   echo("Building latest image...")
   var dockerfile = ""
   if config.hasKey("dockerfile"): dockerfile = "-f " & config["dockerfile"].getStr()
@@ -373,7 +396,7 @@ proc build() =
   quit(0)
 
 ## Gives the user a shell prompt in the given container
-proc bash() =
+proc bash(conf: ProjectConfig) =
   if args["web"]:
     echo("Entering web server container...")
     discard execCmd("docker exec -it " & config["project"].getStr() & "-web bash")
@@ -390,7 +413,7 @@ proc bash() =
   quit(250)
 
 ## Accesses the database's SQL prompt via docker exec
-proc sql() =
+proc sql(conf: ProjectConfig) =
   case config["db"]["type"].getStr():
   of "mysql":
     discard execCmd("docker exec -it " & config["project"].getStr() & "-db mysql")
@@ -406,10 +429,10 @@ proc sql() =
 ## Command bindings
 ##
 
-if args["init"]: init()
-if args["status"]: printStatus()  ## TODO: Refactor to allow for JSON output
-if args["up"]: up()
-if args["down"]: down()
-if args["build"]: build()
-if args["bash"]: bash()
-if args["sql"]: sql()
+if args["init"]: init(newConf)
+if args["status"]: printStatus(newConf)  ## TODO: Refactor to allow for JSON output
+if args["up"]: up(newConf)
+if args["down"]: down(newConf)
+if args["build"]: build(newConf)
+if args["bash"]: bash(newConf)
+if args["sql"]: sql(newConf)

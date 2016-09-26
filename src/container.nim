@@ -112,6 +112,7 @@ proc inspectContainer*(containerName: string): JsonNode =
   try:
     let (output, exitCode) = execCmdEx("docker inspect " & containerName)
     if exitCode != 0:
+      stdout.write(output & "\n")
       raise newException(IOError, "docker-inspect failed")
     result = parseJson(output)
   except:

@@ -9,7 +9,7 @@ import tables
 import sequtils
 import private/types
 
-proc parseEnvTable*(rawEnv: Table[string, JsonNode]): Args
+proc parseEnvTable*(rawEnv: OrderedTable[string, JsonNode]): Args
                    {.raises: [ProjectConfigError].} =
   ## Parses JsonNode tables into Args sequences
   result = @[]

@@ -58,16 +58,17 @@ proc errMissingKey(key: string, shouldQuit: bool = false) =
   if shouldQuit: quit(252)
 
 proc checkAndParseDupFile(): JsonNode {.raises: [].} =
-  if not existsFile(getCurrentDir() / dupFile):
-    echo("Error: No '.up.json' found in current directory")
-    quit(255)
-  result = json.parseFile(getCurrentDir() / dupFile)
-  if not result.hasKey("project"):
-    errMissingKey("project", true)
-  if not result.hasKey("db"):
-    errMissingKey("db", true)
   try:
-    dbConf = newDBConfig(result["db"]) # Set our database config
+    if not existsFile(getCurrentDir() / dupFile):
+      echo("Error: No '.up.json' found in current directory")
+      quit(255)
+    result = json.parseFile(getCurrentDir() / dupFile)
+    if not result.hasKey("project"):
+      errMissingKey("project", true)
+    if not result.hasKey("db"):
+      errMissingKey("db", true)
+    # Set our heap-allocated config variables
+    dbConf = newDBConfig(result["db"])
     newConf = createProjectConfig(result, dbConf)
   except DBConfigError:
     echo("Error: In 'db', " & getCurrentExceptionMsg())
@@ -79,10 +80,14 @@ proc checkAndParseDupFile(): JsonNode {.raises: [].} =
     echo("Fatal: " & getCurrentExceptionMsg())
     quit(250)
 
-proc checkDockerfile() =
-  if not existsFile(getCurrentDir() / "Dockerfile"):
-    echo("Error: Missing \"Dockerfile\" in current directory")
-    quit(254)
+proc checkDockerfile() {.raises: [].} =
+  try:
+    if not existsFile(getCurrentDir() / "Dockerfile"):
+      echo("Error: Missing \"Dockerfile\" in current directory")
+      quit(254)
+  except OSError:
+    echo("Fatal: " & getCurrentExceptionMsg())
+    quit(1)
 
 proc checkStatefile(): bool {.raises: [].} =
   try:
@@ -180,14 +185,14 @@ proc buildBuildArgs(buildArgs: JsonNode): string =
     buildArgsFlat = buildArgsFlat & "--build-arg " & $k & "=" & $v & " "
   return buildArgsFlat
 
-proc startWeb(project: string, portMapping="", folderMapping: string, env: JsonNode, hasDB: bool = true) =
+proc startWeb(project: string, portMapping="", folderMapping: string, env: Args, hasDB: bool = true) =
+  ## TODO: Refactor to leverage the config object instead of raw properties
   echo "Starting web server..."
   let
-    env = buildEnv(env)
     link = if hasDB: "--link " & project & "-db:db " else: ""
     folder = if folderMapping == "": "-v $PWD/code:/var/www " else: "-v $PWD/" & folderMapping & " "
     port = if portMapping == "": " " else: "-p " & portMapping & " "
-    command = "docker run -d -h " & project & ".docker --name " & project & "-web " & port & env & folder & link & " -e TERM=xterm-256color -e VIRTUAL_HOST=" & project & ".docker " & project & ":latest"
+    command = "docker run -d -h " & project & ".docker --name " & project & "-web " & port & $env & folder & link & " -e TERM=xterm-256color -e VIRTUAL_HOST=" & project & ".docker " & project & ":latest"
     exitCode = execCmd command
   if exitCode != 0:
     echo("Error: Starting web server failed. Check the output above")
@@ -203,7 +208,7 @@ proc inspectContainer(containerName: string): JsonNode =
 
 ## Checks the result of "docker inspect <container-name>" to see if it's running
 ## Assumes that the first object in the array returned by "inspect" is the
-## container in question
+## container in question. Uses `return` to short-circuit the proc as needed
 proc isContainerRunning(inspectNode: JsonNode): bool =
   if inspectNode.len == 0:
     return false
@@ -297,48 +302,39 @@ proc init(conf: ProjectConfig) {.raises: [].} =
     quit(1)
 
 ## Checks the current status of each container and prints to stdout
-proc printStatus(conf: ProjectConfig) =
-  var
-    currrent = inspectContainer(conf.web)
-  writeStatus("Web: ", isContainerRunning(currrent))
-  if dbConf.kind != None:
-    currrent = inspectContainer(conf.db)
-    writeStatus("DB:  ", isContainerRunning(currrent))
-  quit(0)
+proc printStatus(conf: ProjectConfig) {.raises: [].} =
+  try:
+    var
+      currrent = inspectContainer(conf.web)
+    writeStatus("Web: ", isContainerRunning(currrent))
+    if dbConf.kind != None:
+      currrent = inspectContainer(conf.db)
+      writeStatus("DB:  ", isContainerRunning(currrent))
+    quit(0)
+  except:
+    echo("Fatal: " & getCurrentExceptionMsg())
+    quit(1)
 
 ## Starts the web container, and database container if configured
-proc up(conf: ProjectConfig) =
+proc up(conf: ProjectConfig) {.raises: [].} =
   if not checkStatefile():
     echo("Error: Docker Up has not been initialised. Run 'dup init'")
     quit(252)
 
-  # Handles getting the env object
-  var envDict = json.parseJson("{}")
-  if config.hasKey("env"): envDict = config["env"]
-
-  # Handles folder mapping
-  var folderMapping = ""
-  if config.hasKey("volume"): folderMapping = config["volume"].getStr()
-
-  var portMapping = ""
-  if config.hasKey("port"): portMapping = config["port"].getStr()
-
-  case config["db"]["type"].getStr():
-  of "mysql":
-    startMysql(config["project"].getStr(), config["db"]["name"].getStr(), config["db"]["pass"].getStr())
-    startWeb(project = config["project"].getStr(), portMapping, folderMapping = folderMapping, env = envDict, hasDB = true)
-  of "postgres":
-    startPostgres(config["project"].getStr(), config["db"]["name"].getStr(), config["db"]["user"].getStr(), config["db"]["pass"].getStr())
-    startWeb(project = config["project"].getStr(), portMapping, folderMapping = folderMapping, env = envDict, hasDB = true)
-  of "none":
-    startWeb(project = config["project"].getStr(), portMapping, folderMapping = folderMapping, env = envDict, hasDB = false)
+  case conf.dbConf.kind
+  of MySQL:
+    startMysql(conf.name, conf.dbConf.name, conf.dbConf.password)
+    startWeb(conf.name, conf.port, conf.volume, conf.envVars, true)
+  of PostgreSQL:
+    startPostgres(conf.name, conf.dbConf.name, conf.dbConf.username, conf.dbConf.password)
+    startWeb(conf.name, conf.port, conf.volume, conf.envVars, true)
   else:
-    echo("Error: Invalid database type specified")
-    quit(252)
+    # Start only the web container if we've got an invalid type (or None)
+    startWeb(conf.name, conf.port, conf.volume, conf.envVars, false)
   quit(0)
 
 ## Stops and removes the containers
-proc down(conf: ProjectConfig) =
+proc down(conf: ProjectConfig) {.raises: [].} =
   if not checkStatefile():
     echo("Error: Docker Up has not been initialised. Run \"dup init\"")
     quit(252)
@@ -346,24 +342,24 @@ proc down(conf: ProjectConfig) =
   echo("Stopping and removing running containers...")
   var
     # stopWeb timeout of zero to stop the container immediately
-    stopWeb = "docker stop -t 0 " & config["project"].getStr() & "-web"
+    stopWeb = "docker stop -t 0 " & conf.web
     # stopDb does not use a timeout to avoid data corruption
-    stopDb = "docker stop " & config["project"].getStr() & "-db"
+    stopDb = "docker stop " & conf.db
     # rmWeb and rmDb both use -v to remove the linked volumes, avoiding orphans
-    rmWeb = "docker rm -v " & config["project"].getStr() & "-web"
-    rmDb = "docker rm -v " & config["project"].getStr() & "-db"
+    rmWeb = "docker rm -v " & conf.web
+    rmDb = "docker rm -v " & conf.db
 
   echo("Stopping web server...")
   discard execCmd(stopWeb)
 
-  if config["db"]["type"].getStr() != "none":
+  if conf.dbConf.kind != None:
     echo("Gracefully stopping database...")
     discard execCmd(stopDb)
 
   echo("Removing web server...")
   discard execCmd(rmWeb)
 
-  if config["db"]["type"].getStr() != "none":
+  if conf.dbConf.kind != None:
     echo("Removing database...")
     discard execCmd(rmDb)
 

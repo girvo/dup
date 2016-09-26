@@ -32,18 +32,25 @@ proc createProjectConfig*(raw: JsonNode, dbConf: DatabaseConfig): ProjectConfig
   if name == "":
     raise newException(ProjectConfigError, "'project' key ")
   let port = raw.getOrDefault("port").getStr("") # Default to empty
+  let volume = raw.getOrDefault("volume").getStr("") # Default to empty
   let env = parseEnvTable(raw.getOrDefault("env").getFields())
   let buildArgs = parseEnvTable(raw.getOrDefault("buildArgs").getFields())
-  result = newProjectConfig(name, dbConf, port, env, buildArgs)
+  result = newProjectConfig(name, dbConf, port, env, buildArgs, volume)
 
-proc webContainer*(config: ProjectConfig): string =
+proc web*(config: ProjectConfig): string =
   ## Helper proc for getting web container name
   result = config.name & "-web"
 
-proc dbContainer*(config: ProjectConfig): string =
+proc db*(config: ProjectConfig): string =
   ## Helper proc for getting database container name
   result = config.name & "-db"
 
-proc dataContainer*(config: ProjectConfig): string =
+proc data*(config: ProjectConfig): string =
   ## Helper proc for getting data container name
   result = config.name & "-data"
+
+proc `$`*(args: Args): string {.raises: [].} =
+  ## Convert the Args sequence to a Docker command string
+  result = ""
+  for arg in args:
+    result &= " -e " & arg.name & "=" & arg.value & ""

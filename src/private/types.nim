@@ -71,6 +71,7 @@ type
   ProjectConfig* = ref object
     name*: string
     port*: string
+    volume*: string
     dbConf*: DatabaseConfig
     envVars*: Args
     buildArgs*: Args
@@ -86,11 +87,13 @@ proc newArg*(name: string, value: string): Arg =
     value: value)
 
 proc newProjectConfig*(name: string, dbConf: DatabaseConfig, port: string,
-                       envVars: Args, buildArgs: Args): ProjectConfig {.raises: [].} =
+                       envVars: Args, buildArgs: Args, volume: string):
+                       ProjectConfig {.raises: [].} =
   ## Build a new project config
   result = ProjectConfig(
     name: name,
     port: port,
+    volume: volume,
     dbConf: dbConf,
     envVars: envVars,
     buildArgs: buildArgs)

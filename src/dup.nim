@@ -17,7 +17,7 @@ import database
 import config
 
 ## Define our version constant for re-use
-const version = "dup 0.4.1"
+const version = "dup 1.0.0"
 
 ## Define our docopt parsing schema
 let doc = """
@@ -57,19 +57,19 @@ proc errMissingKey(key: string, shouldQuit: bool = false) =
   echo("Error: Your \".up.json\" file is missing the \"" & key & "\" key")
   if shouldQuit: quit(252)
 
-proc checkAndParseDupFile(): JsonNode {.raises: [].} =
+proc checkAndParseDupFile() {.raises: [].} =
   try:
     if not existsFile(getCurrentDir() / dupFile):
       echo("Error: No '.up.json' found in current directory")
       quit(255)
-    result = json.parseFile(getCurrentDir() / dupFile)
-    if not result.hasKey("project"):
+    var raw = json.parseFile(getCurrentDir() / dupFile)
+    if not raw.hasKey("project"):
       errMissingKey("project", true)
-    if not result.hasKey("db"):
+    if not raw.hasKey("db"):
       errMissingKey("db", true)
     # Set our heap-allocated config variables
-    dbConf = newDBConfig(result["db"])
-    newConf = createProjectConfig(result, dbConf)
+    dbConf = newDBConfig(raw["db"])
+    newConf = createProjectConfig(raw, dbConf)
   except DBConfigError:
     echo("Error: In 'db', " & getCurrentExceptionMsg())
     quit(251)
@@ -173,18 +173,6 @@ proc startPostgres(project: string, dbname: string, dbuser: string, dbpass: stri
     quit(exitCode)
   echo("Success: Postgres started, and exposed on host port " & $chosenPort)
 
-proc buildEnv(envDict: JsonNode): string =
-  var env = ""
-  for k, v in json.pairs(envDict):
-    env = env & "-e " & $k & "=" & $v & " "
-  return env
-
-proc buildBuildArgs(buildArgs: JsonNode): string =
-  var buildArgsFlat = ""
-  for k, v in json.pairs(buildArgs):
-    buildArgsFlat = buildArgsFlat & "--build-arg " & $k & "=" & $v & " "
-  return buildArgsFlat
-
 proc startWeb(project: string, portMapping="", folderMapping: string, env: Args, hasDB: bool = true) =
   ## TODO: Refactor to leverage the config object instead of raw properties
   echo "Starting web server..."
@@ -192,8 +180,9 @@ proc startWeb(project: string, portMapping="", folderMapping: string, env: Args,
     link = if hasDB: "--link " & project & "-db:db " else: ""
     folder = if folderMapping == "": "-v $PWD/code:/var/www " else: "-v $PWD/" & folderMapping & " "
     port = if portMapping == "": " " else: "-p " & portMapping & " "
-    command = "docker run -d -h " & project & ".docker --name " & project & "-web " & port & $env & folder & link & " -e TERM=xterm-256color -e VIRTUAL_HOST=" & project & ".docker " & project & ":latest"
-    exitCode = execCmd command
+    command = "docker run -d -h " & project & ".docker --name " & project & "-web " & port & $env & " " & folder & link & " -e TERM=xterm-256color -e VIRTUAL_HOST=" & project & ".docker " & project & ":latest"
+  echo command
+  let exitCode = execCmd command
   if exitCode != 0:
     echo("Error: Starting web server failed. Check the output above")
 
@@ -234,7 +223,7 @@ proc writeStatus(name: string, status: bool) =
 ## Check our Dockerfile and .up.json files exist
 ## Bail out if they don't
 checkDockerfile()
-var oldConfig = checkAndParseDupFile()
+checkAndParseDupFile()
 
 ##
 ## Command definitions
@@ -368,23 +357,20 @@ proc down(conf: ProjectConfig) {.raises: [].} =
 
 ## Builds the image, passing build arguments in
 proc build(conf: ProjectConfig) =
-  echo("Building latest image...")
-  var dockerfile = ""
-  if config.hasKey("dockerfile"): dockerfile = "-f " & config["dockerfile"].getStr()
-
-  # Handles getting the env object
-  var rawBuildArgs = newJObject()
-  if config.hasKey("buildArgs"):
-    rawBuildArgs = config["buildArgs"]
-    if rawBuildArgs.hasKey("env") == false:
-      ## Set the "env" build-arg to "dev" if it's not in rawBuildArgs
-      rawBuildArgs["env"] = %"dev"
-  var buildArgs = buildBuildArgs(rawBuildArgs)
-
-  let projectTag = config["project"].getStr() & ":latest"
+  var
+    buildArgs = ""
+    hasEnv = false
+  for arg in conf.buildArgs:
+    buildArgs &= " --build-arg " & arg.name & "=" & arg.value
+    if arg.name == "env": hasEnv = true
+  if not hasEnv:
+    buildArgs &= " --build-arg env=dev"
+  # Setup the build command
+  let projectTag = conf.name & ":latest"
   let cacheOpt = if args["--no-cache"]: "--no-cache" else: ""
-  let command = ["docker build", buildArgs, cacheOpt, dockerfile, "-t", projectTag, "."].join(" ")
-
+  let command = ["docker build", buildArgs, cacheOpt, "-f", conf.dockerfile, "-t", projectTag, "."].join(" ")
+  # Run the build command
+  echo("Building latest image...")
   let exitCode = execCmd(command)
   if exitCode != 0:
     quit(exitCode)
@@ -395,14 +381,14 @@ proc build(conf: ProjectConfig) =
 proc bash(conf: ProjectConfig) =
   if args["web"]:
     echo("Entering web server container...")
-    discard execCmd("docker exec -it " & config["project"].getStr() & "-web bash")
+    discard execCmd("docker exec -it " & conf.web & " bash")
     quit(0)
   if args["db"]:
-    if config["db"]["type"].getStr() == "none":
+    if conf.dbConf.kind == None:
       echo("No database container exists for this project")
       quit(0)
     echo("Entering database container...")
-    discard execCmd("docker exec -it " & config["project"].getStr() & "-db bash")
+    discard execCmd("docker exec -it " & conf.db & " bash")
     quit(0)
   # Default case
   echo("Error: You must specify which container: \"dup bash web\" or \"dup bash db\"")
@@ -410,15 +396,15 @@ proc bash(conf: ProjectConfig) =
 
 ## Accesses the database's SQL prompt via docker exec
 proc sql(conf: ProjectConfig) =
-  case config["db"]["type"].getStr():
-  of "mysql":
-    discard execCmd("docker exec -it " & config["project"].getStr() & "-db mysql")
+  case conf.dbConf.kind
+  of MySQL:
+    discard execCmd("docker exec -it " & conf.db & " mysql")
     quit(0)
-  of "postgres":
-    discard execCmd("docker exec -it -u postgres " & config["project"].getStr() & "-db psql")
+  of PostgreSQL:
+    discard execCmd("docker exec -it -u postgres " & conf.db & " psql")
     quit(0)
-  else:
-    echo("Error: Not implemented for this database type")
+  of None:
+    echo("Error: No database configured for this project")
     quit(251)
 
 ##

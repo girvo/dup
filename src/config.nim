@@ -22,7 +22,7 @@ proc parseEnvTable*(rawEnv: Table[string, JsonNode]): Args
     if value == "":
       raise newException(
         ProjectConfigError,
-        "'env' object values must be non-empty strings")
+        "'env' or 'buildArgs' object values must be non-empty strings")
     arg = newArg(key, value)
     result.add(arg)
 
@@ -35,7 +35,8 @@ proc createProjectConfig*(raw: JsonNode, dbConf: DatabaseConfig): ProjectConfig
   let volume = raw.getOrDefault("volume").getStr("") # Default to empty
   let env = parseEnvTable(raw.getOrDefault("env").getFields())
   let buildArgs = parseEnvTable(raw.getOrDefault("buildArgs").getFields())
-  result = newProjectConfig(name, dbConf, port, env, buildArgs, volume)
+  let dockerfile = raw.getOrDefault("dockerfile").getStr("Dockerfile")
+  result = newProjectConfig(name, dbConf, port, env, buildArgs, volume, dockerfile)
 
 proc web*(config: ProjectConfig): string =
   ## Helper proc for getting web container name

@@ -72,6 +72,7 @@ type
     name*: string
     port*: string
     volume*: string
+    dockerfile*: string
     dbConf*: DatabaseConfig
     envVars*: Args
     buildArgs*: Args
@@ -87,13 +88,15 @@ proc newArg*(name: string, value: string): Arg =
     value: value)
 
 proc newProjectConfig*(name: string, dbConf: DatabaseConfig, port: string,
-                       envVars: Args, buildArgs: Args, volume: string):
-                       ProjectConfig {.raises: [].} =
-  ## Build a new project config
+                       envVars: Args, buildArgs: Args, volume: string,
+                       dockerfile: string): ProjectConfig {.raises: [].} =
+  ## Build a new project config (used internally)
+  ## TODO: Refactor the order of arguments to this proc
   result = ProjectConfig(
     name: name,
     port: port,
     volume: volume,
+    dockerfile: dockerfile,
     dbConf: dbConf,
     envVars: envVars,
     buildArgs: buildArgs)

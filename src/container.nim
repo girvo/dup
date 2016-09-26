@@ -98,11 +98,19 @@ proc startPostgres*(project: string, dbname: string, dbuser: string, dbpass: str
 proc startWeb*(project: string, portMapping="", folderMapping: string, env: Args, hasDB: bool = true) =
   ## TODO: Refactor to leverage the config object instead of raw properties
   echo "Starting web server..."
+  var
+    hasVirtualHost = false
+    virtualHost: string = ""
+  for arg in env:
+    if arg.name == "VIRTUAL_HOST":
+      hasVirtualHost = true
+      virtualHost = arg.value
   let
+    hostname = if hasVirtualHost: virtualHost else: (project & ".docker")
     link = if hasDB: "--link " & project & "-db:db " else: ""
     folder = if folderMapping == "": "-v $PWD/code:/var/www " else: "-v $PWD/" & folderMapping & " "
     port = if portMapping == "": " " else: "-p " & portMapping & " "
-    command = "docker run -d -h " & project & ".docker --name " & project & "-web " & port & $env & " " & folder & link & " -e TERM=xterm-256color -e VIRTUAL_HOST=" & project & ".docker " & project & ":latest"
+    command = "docker run -d -h " & hostname & " --name " & project & "-web " & port & $env & " " & folder & link & " -e TERM=xterm-256color -e VIRTUAL_HOST=" & project & ".docker " & project & ":latest"
   echo command
   let exitCode = execCmd command
   if exitCode != 0:

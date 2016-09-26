@@ -5,7 +5,7 @@
 - Massive refactoring of the core code. Properly setup in modules, properly typed with full compile-time checking and checked exception types.
 - Supports easy addition of new database types now
 - Code is now more robust, with proper error checking, and is now easier to test
-- Now respects `VIRTUAL_HOST` correctly, setting the hostname to the defined `env` value (if specified, it still defaults to `<name>.docker`), resolving [issue #10](/girvo/dup/issues/10)
+- Now respects `VIRTUAL_HOST` correctly, setting the hostname to the defined `env` value (if not specified, it still defaults to `<name>.docker`), resolving [issue #10](/girvo/dup/issues/10)
 
 ## v0.4.0
 

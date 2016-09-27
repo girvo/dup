@@ -26,6 +26,8 @@ proc newDBConfig*(config: JsonNode): DatabaseConfig =
       config.getOrDefault("pass").getStr(),
       config.getOrDefault("name").getStr(),
       config.getOrDefault("user").getStr())
+  of "mongodb":
+    result = MongoDB.newDBConfig()
   of "none":
     result = None.newDBConfig()
   else:
@@ -39,7 +41,9 @@ proc getVolumePath*(conf: DatabaseConfig): string {.raises: [].} =
     result = "/var/lib/mysql"
   of PostgreSQL:
     result = "/var/lib/postgres"
-  else:
+  of MongoDB:
+    result = "/data/db"
+  of None:
     result = ""
 
 proc getImageName*(conf: DatabaseConfig): string {.raises: [].} =
@@ -48,5 +52,7 @@ proc getImageName*(conf: DatabaseConfig): string {.raises: [].} =
     result = "tutum/mysql"
   of PostgreSQL:
     result = "postgres:9.5"
-  else:
+  of MongoDB:
+    result = "mongo:3.3"
+  of None:
     result = ""

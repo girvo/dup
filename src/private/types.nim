@@ -7,14 +7,14 @@
 type
   DatabaseType* = enum
     ## Used for DatabaseConfig ADT
-    MySQL, PostgreSQL, None
+    MySQL, PostgreSQL, MongoDB, None
   DatabaseConfig* = ref object
     ## DatabaseConfig ADT
     case kind: DatabaseType
     of PostgreSQL:
       username*: string
     else: discard
-    # Shared properties across the ADT
+    # Shared properties across the ADT -- empty for None et al.
     name*: string
     password*: string
 
@@ -26,11 +26,12 @@ proc kind*(s: DatabaseConfig): DatabaseType =
   ## Getter for the "kind" property
   result = s.kind
 
-proc newDBNone(): DatabaseConfig =
+proc newDBNone(): DatabaseConfig {.raises: [].} =
   ## Creates a new DatabaseConfig of the "None" type
   result = DatabaseConfig(kind: None)
 
-proc newDBMySQL(pass: string, name: string): DatabaseConfig =
+proc newDBMySQL(pass: string, name: string): DatabaseConfig
+                {.raises: [DBConfigError].} =
   ## Creates a new DatabaseConfig of the "MySQL" type
   if pass.len == 0: raise newException(DBConfigError, "'pass' must be set and non-empty")
   if name.len == 0: raise newException(DBConfigError, "'name' must be set and non-empty")
@@ -39,7 +40,8 @@ proc newDBMySQL(pass: string, name: string): DatabaseConfig =
     password: pass,
     name: name)
 
-proc newDBPostgreSQL(pass: string, name: string, user: string): DatabaseConfig =
+proc newDBPostgreSQL(pass: string, name: string, user: string): DatabaseConfig
+                     {.raises: [DBConfigError].} =
   ## Creates a new DatabaseConfig of the "PostgreSQL" type
   if pass.len == 0: raise newException(DBConfigError, "'pass' must be set and non-empty")
   if name.len == 0: raise newException(DBConfigError, "'name' must be set and non-empty")
@@ -50,13 +52,22 @@ proc newDBPostgreSQL(pass: string, name: string, user: string): DatabaseConfig =
     name: name,
     username: user)
 
-proc newDBConfig*(dbType: DatabaseType, pass = "", name = "", user = ""): DatabaseConfig =
+proc newDBMongoDB*(): DatabaseConfig {.raises: [].} =
+  result = DatabaseConfig(
+    kind: MongoDB,
+    password: "",
+    name: "")
+
+proc newDBConfig*(dbType: DatabaseType, pass = "", name = "",
+                  user = ""): DatabaseConfig {.raises: [DBConfigError].} =
   ## Creates a new database configuration based on a given type param
   case dbType
   of MySQL:
     result = newDBMySQL(pass, name)
   of PostgreSQL:
     result = newDBPostgreSQL(pass, name, user)
+  of MongoDB:
+    result = newDBMongoDB()
   of None:
     result = newDBNone()
   else:

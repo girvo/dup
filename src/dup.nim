@@ -11,7 +11,7 @@ from database import newDBConfig
 from container import checkDockerfile, checkAndParseDupFile
 
 ## Define our version constant for re-use
-const version = "dup 1.0.0"
+const version = "dup 1.0.0-RC1"
 
 ## Define our docopt parsing schema
 let doc = """
@@ -24,6 +24,7 @@ Usage:
   dup status
   dup build [--no-cache]
   dup bash [web | db]
+  dup logs [web | db]
   dup sql
   dup (-h | --help)
   dup (-v | --version)
@@ -61,3 +62,4 @@ if args["down"]: down(conf)
 if args["build"]: build(conf, args["--no-cache"])
 if args["bash"]: bash(conf, args)
 if args["sql"]: sql(conf)
+if args["logs"]: logs(conf, args)

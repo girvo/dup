@@ -6,6 +6,7 @@
 import os
 import osproc
 import json
+import strutils
 
 import private/types
 import database
@@ -84,7 +85,8 @@ proc startMysql*(project: string, dbname: string, dbpass: string) =
     quit(exitCode)
   echo("Success: MySQL started, and exposed on host port " & $chosenPort)
 
-proc startPostgres*(project: string, dbname: string, dbuser: string, dbpass: string) =
+proc startPostgres*(project: string, dbname: string, dbuser: string,
+                    dbpass: string) {.raises: [].} =
   echo "Starting Postgres..."
   let chosenPort = getAndCheckRandomPort()
   let portFragment = $chosenPort & ":5432"
@@ -94,6 +96,24 @@ proc startPostgres*(project: string, dbname: string, dbuser: string, dbpass: str
     echo("Error: Starting Postgres failed. Check the output above")
     quit(exitCode)
   echo("Success: Postgres started, and exposed on host port " & $chosenPort)
+
+proc startMongo*(conf: ProjectConfig) {.raises: [].} =
+  echo "Starting MongoDB..."
+  let
+    chosenPort = getAndCheckRandomPort()
+    portFragment = $chosenPort & ":27017"
+    command = join([
+      "docker run -d",
+      "--name", conf.db,
+      "--volumes-from", conf.data,
+      "-p", portFragment,
+      conf.dbConf.getImageName
+    ], " ")
+    exitCode = execCmd command
+  if exitCode != 0:
+    echo("Error: Starting MongoDB fialed. Check the ouput above")
+    quit(exitCode)
+  echo("Success: MongoDB started, and exposed on host port " & $chosenPort)
 
 proc startWeb*(project: string, portMapping="", folderMapping: string, env: Args, hasDB: bool = true) =
   ## TODO: Refactor to leverage the config object instead of raw properties

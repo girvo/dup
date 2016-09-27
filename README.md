@@ -9,6 +9,9 @@ Usage:
   dup init                 Initialises the "-data" container
   dup status               Checks status of the "-web" and "-db" containers
   dup build [--no-cache]   Builds the web container's image
+  dup bash [web | db]      Accesses /bin/bash in specified container
+  dup logs [web | db]      Follows logs for specified container
+  dup sql                  Accesses SQL/Mongo prompt for "-db" container
   dup (-h | --help)        Prints this help message
   dup --version            Prints the installed version
 ```
@@ -23,9 +26,10 @@ In the root of your project, next to the `Dockerfile`, you will need a JSON file
 {
     "project": "project-name-here",
     "db": {
-        "type": "mysql-or-postgres",
-        "name": "database-name",
-        "pass": "password-for-admin-or-root-user"
+        "type": "mysql | postgres | mongodb | none",
+        "name": "database name (mysql/postgres)",
+        "pass": "pasword for root user (mysql/postgres)",
+        "user": "admin username (postgres)"
     }
 }
 ```

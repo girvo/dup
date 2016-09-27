@@ -1,6 +1,6 @@
 # Changelog
 
-## V1.0.0-RC1
+## v1.0.0-RC1
 
 - Massive refactoring of the core code. Properly setup in modules, properly typed with full compile-time checking and checked exception types.
 - Supports easy addition of new database types now

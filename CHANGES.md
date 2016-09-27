@@ -7,7 +7,7 @@
 - Code is now more robust, with proper error checking, and is now easier to test
 - Now respects `VIRTUAL_HOST` correctly, setting the hostname to the defined `env` value (if not specified, it still defaults to `<name>.docker`), resolving [issue #10](/girvo/dup/issues/10)
 - Database now supports `mongo` as a type parameter, with data-volume container handling for persistence
- - This does not take any kind of config currently, merely: `"type": "mongo"`
+ - This does not take any kind of config currently, merely: `"type": "mongodb"`
 - Added `dup logs [web|db]` command
  - Runs in "follow" mode, press Ctrl-C to stop viewing logs
 

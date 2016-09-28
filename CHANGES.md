@@ -1,5 +1,11 @@
 # Changelog
 
+## v1.0.0-RC2
+
+- Removes need for `.up.state` file
+- Fixes `VIRTUAL_HOST` bug
+- Adds `docker version` check
+
 ## v1.0.0-RC1
 
 - Massive refactoring of the core code. Properly setup in modules, properly typed with full compile-time checking and checked exception types.

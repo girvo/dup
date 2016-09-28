@@ -20,8 +20,6 @@ proc needsInit*(conf: ProjectConfig) =
     quit(252)
 
 ## Initialise the database
-## TODO: Refactor this to remove the need for a state-file, check the Docker
-##       inspect output instead for the given container name
 proc init*(conf: ProjectConfig) {.raises: [].} =
   if hasDataContainerBeenBuilt(conf):
     ## Exit out if there already is an .up.state file

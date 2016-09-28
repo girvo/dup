@@ -79,6 +79,7 @@ proc startMysql*(project: string, dbname: string, dbpass: string) =
   let chosenPort = getAndCheckRandomPort()
   let portFragment = $chosenPort & ":3306"
   let command = "docker run -d --name " & project & "-db --voluWemes-from " & project & "-data -e MYSQL_PASS=" & dbpass & " -e ON_CREATE_DB=" & dbname & " -p " & portFragment & " tutum/mysql"
+  echo command
   let exitCode = execCmd command
   if exitCode != 0:
     echo("Error: Starting MySQL failed. Check the output above")
@@ -91,6 +92,7 @@ proc startPostgres*(project: string, dbname: string, dbuser: string,
   let chosenPort = getAndCheckRandomPort()
   let portFragment = $chosenPort & ":5432"
   let command = "docker run -d --name " & project & "-db --volumes-from " & project & "-data -e POSTGRES_PASSWORD=" & dbpass & " -e POSTGRES_DB=" & dbname & " -e POSTGRES_USER=" & dbuser & " -p " & portFragment & " postgres:9.5"
+  echo command
   let exitCode = execCmd command
   if exitCode != 0:
     echo("Error: Starting Postgres failed. Check the output above")
@@ -109,7 +111,8 @@ proc startMongo*(conf: ProjectConfig) {.raises: [].} =
       "-p", portFragment,
       conf.dbConf.getImageName
     ], " ")
-    exitCode = execCmd command
+  echo command
+  let exitCode = execCmd command
   if exitCode != 0:
     echo("Error: Starting MongoDB fialed. Check the ouput above")
     quit(exitCode)
@@ -119,18 +122,15 @@ proc startWeb*(project: string, portMapping="", folderMapping: string, env: Args
   ## TODO: Refactor to leverage the config object instead of raw properties
   echo "Starting web server..."
   var
-    hasVirtualHost = false
-    virtualHost: string = ""
+    hostname = project & ".docker"
   for arg in env:
     if arg.name == "VIRTUAL_HOST":
-      hasVirtualHost = true
-      virtualHost = arg.value
+      hostname = arg.value
   let
-    hostname = if hasVirtualHost: virtualHost else: (project & ".docker")
     link = if hasDB: "--link " & project & "-db:db " else: ""
     folder = if folderMapping == "": "-v $PWD/code:/var/www " else: "-v $PWD/" & folderMapping & " "
     port = if portMapping == "": " " else: "-p " & portMapping & " "
-    command = "docker run -d -h " & hostname & " --name " & project & "-web " & port & $env & " " & folder & link & " -e TERM=xterm-256color -e VIRTUAL_HOST=" & virtualHost & " " & project & ":latest"
+    command = "docker run -d -h " & hostname & " --name " & project & "-web " & port & $env & " " & folder & link & " -e TERM=xterm-256color -e VIRTUAL_HOST=" & hostname & " " & project & ":latest"
   echo command
   let exitCode = execCmd command
   if exitCode != 0:

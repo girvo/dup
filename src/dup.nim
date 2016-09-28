@@ -7,6 +7,7 @@ import docopt
 
 import private/types
 import command
+import util
 from docker import getVersion
 from database import newDBConfig
 from container import checkDockerfile, checkAndParseDupFile
@@ -51,7 +52,7 @@ let
   dv = docker.getVersion()
   isWrong = if dv.major == 1 and dv.minor == 12: false else: true
 if isWrong:
-  echo("Fatal: Please install Docker >= v1.12.0")
+  writeError("Please install Docker >= v1.12.0", true)
   quit(5)
 
 ## Check our Dockerfile and .up.json files exist

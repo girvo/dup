@@ -11,10 +11,11 @@ import json
 import options
 
 import private/types
+import util
 
 proc exitWithErr(output: string, exitCode: int) {.raises: [].} =
   ## Internal proc for exiting with a stdout/exit-code tuple from execCmdEx
-  echo("Fatal: Error checking Docker client version, please check output below")
+  writeError("Error checking Docker client version, please check output below", true)
   echo(output)
   quit(exitCode)
 
@@ -48,7 +49,7 @@ proc getVersion*(): VersionNumber =
   except:
     exitWithErr(getCurrentExceptionMsg(), 1)
   if exitCode != 0:
-    echo("Fatal: Error checking Docker client version, please check output below")
+    writeError("Error checking Docker client version, please check output below", true)
     echo(output)
     quit(exitCode)
   var versionStr = split(output, ' ')[2]

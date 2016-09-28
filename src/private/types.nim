@@ -111,3 +111,16 @@ proc newProjectConfig*(name: string, dbConf: DatabaseConfig, port: string,
     dbConf: dbConf,
     envVars: envVars,
     buildArgs: buildArgs)
+
+## Version number handling for Docker
+type
+  VersionNumber* = tuple
+    major: int
+    minor: int
+    patch: int
+
+proc newVersionNumber*(major, minor, patch: int): VersionNumber {.raises: [].} =
+  result = (
+    major,
+    minor,
+    patch)

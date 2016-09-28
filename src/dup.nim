@@ -7,6 +7,7 @@ import docopt
 
 import private/types
 import command
+from docker import getVersion
 from database import newDBConfig
 from container import checkDockerfile, checkAndParseDupFile
 
@@ -45,6 +46,14 @@ var
   dbConf = newDBConfig(None) ## Default the database config to "None"
   conf: ProjectConfig ## Configuration ref object
 
+## Check Docker version, bail-out if it's not 1.12.0 or above
+let dv = docker.getVersion()
+var isWrong = false
+if dv.major != 1: isWrong = true
+if dv.major == 1 and dv.minor != 12: isWrong = true
+if isWrong:
+  echo("Fatal: Please install Docker >= v1.12.0")
+  quit(5)
 
 ## Check our Dockerfile and .up.json files exist
 ## Bail out if they don't

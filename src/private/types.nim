@@ -92,7 +92,7 @@ type
   ConfigError* = object of IOError
   ProjectConfigError* = object of ConfigError
 
-proc newArg*(name: string, value: string): Arg =
+proc newArg*(name: string, value: string): Arg {.raises: [].} =
   ## Create an arg given two strings
   result = (
     name: name,

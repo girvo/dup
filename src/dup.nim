@@ -7,11 +7,13 @@ import docopt
 
 import private/types
 import command
+import util
+from docker import getVersion
 from database import newDBConfig
 from container import checkDockerfile, checkAndParseDupFile
 
 ## Define our version constant for re-use
-const version = "dup 1.0.0-RC1"
+const version = "dup 1.0.0-RC2"
 
 ## Define our docopt parsing schema
 let doc = """
@@ -45,6 +47,13 @@ var
   dbConf = newDBConfig(None) ## Default the database config to "None"
   conf: ProjectConfig ## Configuration ref object
 
+## Check Docker version, bail-out if it's not 1.12.x
+let
+  dv = docker.getVersion()
+  isWrong = if dv.major == 1 and dv.minor == 12: false else: true
+if isWrong:
+  writeError("Please install Docker >= v1.12.0", true)
+  quit(5)
 
 ## Check our Dockerfile and .up.json files exist
 ## Bail out if they don't

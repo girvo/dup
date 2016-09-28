@@ -92,7 +92,7 @@ type
   ConfigError* = object of IOError
   ProjectConfigError* = object of ConfigError
 
-proc newArg*(name: string, value: string): Arg =
+proc newArg*(name: string, value: string): Arg {.raises: [].} =
   ## Create an arg given two strings
   result = (
     name: name,
@@ -111,3 +111,16 @@ proc newProjectConfig*(name: string, dbConf: DatabaseConfig, port: string,
     dbConf: dbConf,
     envVars: envVars,
     buildArgs: buildArgs)
+
+## Version number handling for Docker
+type
+  VersionNumber* = tuple
+    major: int
+    minor: int
+    patch: int
+
+proc newVersionNumber*(major, minor, patch: int): VersionNumber {.raises: [].} =
+  result = (
+    major,
+    minor,
+    patch)

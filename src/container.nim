@@ -16,10 +16,11 @@ import util
 const dupFile* = ".up.json"
 const stateFile* = ".up.state"
 
+## TODO: Move this into "util.nim"
 proc checkAndParseDupFile*(dbConf: var DatabaseConfig, conf: var ProjectConfig) {.raises: [].} =
   try:
     if not existsFile(getCurrentDir() / dupFile):
-      echo("Error: No '.up.json' found in current directory")
+      writeError("No '.up.json' found in current directory")
       quit(255)
     var raw = json.parseFile(getCurrentDir() / dupFile)
     if not raw.hasKey("project"):
@@ -30,77 +31,53 @@ proc checkAndParseDupFile*(dbConf: var DatabaseConfig, conf: var ProjectConfig) 
     dbConf = newDBConfig(raw["db"])
     conf = createProjectConfig(raw, dbConf)
   except DBConfigError:
-    echo("Error: In 'db', " & getCurrentExceptionMsg())
+    writeError("In 'db', " & getCurrentExceptionMsg())
     quit(251)
   except ProjectConfigError:
-    echo("Error: In config, " & getCurrentExceptionMsg())
+    writeError("In config, " & getCurrentExceptionMsg())
     quit(252)
   except:
-    echo("Fatal: " & getCurrentExceptionMsg())
+    writeError(getCurrentExceptionMsg(), true)
     quit(250)
 
+## TODO: Move this into "util.nim"
 proc checkDockerfile*() {.raises: [].} =
   try:
     if not existsFile(getCurrentDir() / "Dockerfile"):
-      echo("Error: Missing \"Dockerfile\" in current directory")
+      writeError("Missing \"Dockerfile\" in current directory")
       quit(254)
   except OSError:
-    echo("Fatal: " & getCurrentExceptionMsg())
+    writeError(getCurrentExceptionMsg(), true)
     quit(1)
-
-proc checkStatefile*(): bool {.raises: [].} =
-  try:
-    result = existsFile(getCurrentDir() / stateFile)
-  except:
-    echo("Fatal: " & getCurrentExceptionMsg())
-    quit(1)
-
-proc buildStatefile*() =
-  echo("Building .up.state file...")
-  open(getCurrentDir() / stateFile, fmWrite).close()
-  if existsFile(getCurrentDir() / ".gitignore"):
-    var
-      hasLine: bool = false
-      o = open(getCurrentDir() / ".gitignore", fmRead)
-
-    for line in o.lines:
-      if line == ".up.state":
-        hasLine = true
-    o.close()
-
-    if not hasLine:
-      echo("Appending .up.state to .gitignore...")
-      var a = open(getCurrentDir() / ".gitignore", fmAppend)
-      a.writeLine(".up.state")
-      a.close()
 
 proc startMysql*(project: string, dbname: string, dbpass: string) =
-  echo "Starting MySQL..."
+  writeMsg("Starting MySQL...")
   let chosenPort = getAndCheckRandomPort()
   let portFragment = $chosenPort & ":3306"
   let command = "docker run -d --name " & project & "-db --voluWemes-from " & project & "-data -e MYSQL_PASS=" & dbpass & " -e ON_CREATE_DB=" & dbname & " -p " & portFragment & " tutum/mysql"
-  echo command
+  writeCmd(command)
   let exitCode = execCmd command
   if exitCode != 0:
-    echo("Error: Starting MySQL failed. Check the output above")
+    writeError("Starting MySQL failed. Check the output above")
     quit(exitCode)
-  echo("Success: MySQL started, and exposed on host port " & $chosenPort)
+  writeSuccess("MySQL started, and exposed on host port " & $chosenPort)
 
 proc startPostgres*(project: string, dbname: string, dbuser: string,
                     dbpass: string) {.raises: [].} =
-  echo "Starting Postgres..."
-  let chosenPort = getAndCheckRandomPort()
-  let portFragment = $chosenPort & ":5432"
-  let command = "docker run -d --name " & project & "-db --volumes-from " & project & "-data -e POSTGRES_PASSWORD=" & dbpass & " -e POSTGRES_DB=" & dbname & " -e POSTGRES_USER=" & dbuser & " -p " & portFragment & " postgres:9.5"
-  echo command
+  writeMsg("Starting Postgres...")
+  let
+    chosenPort = getAndCheckRandomPort()
+    portFragment = $chosenPort & ":5432"
+    command = "docker run -d --name " & project & "-db --volumes-from " & project & "-data -e POSTGRES_PASSWORD=" & dbpass & " -e POSTGRES_DB=" & dbname & " -e POSTGRES_USER=" & dbuser & " -p " & portFragment & " postgres:9.5"
+  writeCmd(command)
   let exitCode = execCmd command
   if exitCode != 0:
-    echo("Error: Starting Postgres failed. Check the output above")
+    writeError("Starting Postgres failed. Check the output above")
     quit(exitCode)
-  echo("Success: Postgres started, and exposed on host port " & $chosenPort)
+  writeSuccess("Postgres started, and exposed on host port " & $chosenPort)
 
 proc startMongo*(conf: ProjectConfig) {.raises: [].} =
-  echo "Starting MongoDB..."
+  writeMsg("Starting MongoDB...")
   let
     chosenPort = getAndCheckRandomPort()
     portFragment = $chosenPort & ":27017"
@@ -111,16 +88,16 @@ proc startMongo*(conf: ProjectConfig) {.raises: [].} =
       "-p", portFragment,
       conf.dbConf.getImageName
     ], " ")
-  echo command
+  writeCmd(command)
   let exitCode = execCmd command
   if exitCode != 0:
-    echo("Error: Starting MongoDB fialed. Check the ouput above")
+    writeError("Starting MongoDB fialed. Check the ouput above")
     quit(exitCode)
-  echo("Success: MongoDB started, and exposed on host port " & $chosenPort)
+  writeSuccess("MongoDB started, and exposed on host port " & $chosenPort)
 
 proc startWeb*(project: string, portMapping="", folderMapping: string, env: Args, hasDB: bool = true) =
   ## TODO: Refactor to leverage the config object instead of raw properties
-  echo "Starting web server..."
+  writeMsg("Starting web server...")
   var
     hostname = project & ".docker"
   for arg in env:
@@ -131,16 +108,15 @@ proc startWeb*(project: string, portMapping="", folderMapping: string, env: Args
     folder = if folderMapping == "": "-v $PWD/code:/var/www " else: "-v $PWD/" & folderMapping & " "
     port = if portMapping == "": " " else: "-p " & portMapping & " "
     command = "docker run -d -h " & hostname & " --name " & project & "-web " & port & $env & " " & folder & link & " -e TERM=xterm-256color -e VIRTUAL_HOST=" & hostname & " " & project & ":latest"
-  echo command
+  writeCmd(command)
   let exitCode = execCmd command
   if exitCode != 0:
-    echo("Error: Starting web server failed. Check the output above")
+    writeError("Starting web server failed. Check the output above")
 
 proc inspectContainer*(containerName: string): JsonNode =
   try:
-    let (output, exitCode) = execCmdEx("docker inspect " & containerName)
+    let (output, exitCode) = execCmdEx("docker inspect " & containerName, {poUsePath})
     if exitCode != 0:
-      stdout.write(output & "\n")
       raise newException(IOError, "docker-inspect failed")
     result = parseJson(output)
   except:
@@ -156,3 +132,18 @@ proc isContainerRunning*(inspectNode: JsonNode): bool =
   if running == nil:
     return false
   return running.bval
+
+proc doesContainerExist*(inspectNode: JsonNode): bool =
+  result = true
+  if inspectNode.len == 0:
+    result = false
+
+proc hasDataContainerBeenBuilt*(conf: ProjectConfig): bool {.raises: [].} =
+  ## Inspects the <project>-data container to check existance
+  try:
+    let
+      dataContainer = inspectContainer(conf.data)
+    result = doesContainerExist(dataContainer)
+  except:
+    writeError(getCurrentExceptionMsg(), true)
+    quit(1)

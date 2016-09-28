@@ -7,7 +7,7 @@ import json
 import strutils
 import private/types
 
-proc newDBConfig*(config: JsonNode): DatabaseConfig =
+proc newDBConfig*(config: JsonNode): DatabaseConfig {.raises: [DBConfigError].} =
   ## Instantiates the DatabaseConfig object from a parsed JsonNode
   ## Proc assumes the "db" object from the .up.json has been passed in
   let dbType = config.getOrDefault("type")

@@ -18,6 +18,12 @@ Usage:
 
 `dup` is a tiny wrapper over Docker that loads a declarative JSON file for a given project to manage containers (especially stateful database containers) in a sane way. It was created due to frustration with [docker-compose](https://docs.docker.com/compose/) and it's issues with volume-only containers: a prerequisite for easy local web development. Three containers are created, prefixed with your declared project name (no defaulting to folder names here!): `-web`, `-db` and `-data`.
 
+## Installation
+
+- Download the latest binary for your platform from the [releases tab](https://github.com/girvo/dup/releases)
+- Unzip the archive
+- Move the `dup` binary on to your `PATH` (usually `/usr/local/bin`)
+
 ## `.up.json`
 
 In the root of your project, next to the `Dockerfile`, you will need a JSON file `.up.json`, that contains at least this:

@@ -12,8 +12,45 @@ import private/types
 import database
 import config
 
+proc writeError*(err: string, fatal: bool = false) {.raises: [].} =
+  ## Writes an error/fatal error to stdout with correct message
+  try:
+    setForegroundColor(fgRed)
+    if not fatal:
+      stdout.write("ERROR: ")
+    else:
+      writeStyled("FATAL: ")
+    stdout.resetAttributes()
+    stdout.write(err & "\n")
+  except:
+    var prefix = if fatal: "FATAL: " else: "ERROR: "
+    echo(prefix & err)
+
+proc writeMsg*(msg: string) {.raises: [].} =
+  ## Writes a dim message to stdout
+  try:
+    stdout.styledWriteLine(styleDim, msg, resetStyle)
+  except:
+    echo(msg)
+
+proc writeSuccess*(msg: string) {.raises: [].} =
+  ## Writes a bright green success message to stdout
+  try:
+    setForegroundColor(fgGreen)
+    writeStyled("SUCCESS: " & msg & "\n", {styleBright})
+    stdout.resetAttributes()
+  except:
+    echo("SUCCESS: " & msg)
+
+proc writeCmd*(cmd: string) {.raises: [].} =
+  try:
+    stdout.styledWriteLine(styleUnknown, "+ " & cmd, resetStyle)
+  except:
+    echo(cmd)
+
+
 proc errMissingKey*(key: string, shouldQuit: bool = false) =
-  echo("Error: Your \".up.json\" file is missing the \"" & key & "\" key")
+  writeError("Your \".up.json\" file is missing the \"" & key & "\" key")
   if shouldQuit: quit(252)
 
 proc getAndCheckRandomPort*(): int =
@@ -48,7 +85,7 @@ proc getAndCheckRandomPort*(): int =
     exposedPort = generate()
   # Final cycle checker exit
   if count <= 10:
-    echo("Error: Could not find a free host port to bind to")
+    writeError("Could not find a free host port to bind to")
     quit(243)
   return exposedPort
 
@@ -56,12 +93,13 @@ proc getAndCheckRandomPort*(): int =
 ## "true": running (green)
 ## "false": not running (red)
 proc writeStatus*(name: string, status: bool) =
-  writeStyled(name)
+  stdout.write(name)
   if status:
     setForegroundColor(fgGreen)
     stdout.write("running")
   else:
     setForegroundColor(fgRed)
     stdout.write("not running")
-  resetAttributes()
+  stdout.resetAttributes()
   stdout.write("\n")
+

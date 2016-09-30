@@ -54,7 +54,7 @@ proc startMysql*(project: string, dbname: string, dbpass: string) =
   writeMsg("Starting MySQL...")
   let chosenPort = getAndCheckRandomPort()
   let portFragment = $chosenPort & ":3306"
-  let command = "docker run -d --name " & project & "-db --voluWemes-from " & project & "-data -e MYSQL_PASS=" & dbpass & " -e ON_CREATE_DB=" & dbname & " -p " & portFragment & " tutum/mysql"
+  let command = "docker run -d --name " & project & "-db --volumes-from " & project & "-data -e MYSQL_PASS=" & dbpass & " -e ON_CREATE_DB=" & dbname & " -p " & portFragment & " tutum/mysql"
   writeCmd(command)
   let exitCode = execCmd command
   if exitCode != 0:

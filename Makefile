@@ -2,6 +2,7 @@ NIM_OPTS=--parallelBuild:1 --define:nimOldSplit
 APP_NAME=dup
 BIN_DIR=build
 SRC_DIR=src
+TEST_DIR=test
 
 all: clean $(BIN_DIR)/$(APP_NAME)
 
@@ -22,4 +23,11 @@ release: clean
 $(BIN_DIR)/$(APP_NAME): $(wildcard $SRC_DIR/**/*.nim)
 	nim c $(NIM_OPTS) --out:$(BIN_DIR)/$(APP_NAME) $(SRC_DIR)/$(APP_NAME)
 
-.PHONY: all clean run release linux
+# Executes the (compiled, dependent) test runner
+test: ./test/runner
+	@$<
+
+./test/runner: $(wildcard ./**/*.nim)
+	nim c -x:on $(TEST_DIR)/runner
+
+.PHONY: all clean run release linux test

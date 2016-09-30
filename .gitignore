@@ -9,3 +9,5 @@ nrpl*
 tnim*
 # Built binaries
 /build
+/test/*
+!/test/**/*.nim

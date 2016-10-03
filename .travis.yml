@@ -1,8 +1,14 @@
 language: c
-sudo: true
+sudo: false
+os: linux
+compiler: clang
 
-compiler:
-- clang
+addons:
+  apt:
+    packages:
+    - libcurl4-openssl-dev
+    - libsdl1.2-dev
+    - libgc-dev
 
 install:
 - wget http://nim-lang.org/download/nim-0.15.0.tar.xz

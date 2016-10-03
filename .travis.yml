@@ -12,7 +12,7 @@ addons:
     - git
 
 install:
-- gcc -v
+- gcc-6 -v
 # - nim -v
 # - nim e install_tools.nims
 # - ln -s $HOME/.nimble/bin/nimble /usr/local/bin/nimble

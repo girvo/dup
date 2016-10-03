@@ -4,6 +4,8 @@ dist: trusty
 compiler: gcc
 
 install:
+- echo $HOME
+- exit 1
 - wget http://nim-lang.org/download/nim-0.15.0.tar.xz
 - tar xvf nim-0.15.0.tar.xz
 - cd nim-0.15.0/
@@ -15,6 +17,5 @@ install:
 - nimble -v
 
 script:
-- exit 1
 - nimble install
 - make test

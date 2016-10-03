@@ -1,18 +1,21 @@
 language: c
-sudo: false
-os: linux
+sudo: true
+dist: trusty
 compiler: gcc
 
 addons:
   apt:
+    sources:
+    # add PPAs with more up-to-date toolchains
+    - ubuntu-toolchain-r-test
+    - llvm-toolchain-precise-3.6
     packages:
-    - libcurl4-openssl-dev
-    - libsdl1.2-dev
-    - libgc-dev
-    - git
+    # install toolchains
+    - gcc-6
+    - g++-6
 
 install:
-- gcc-6 -v
+- gcc -v
 # - nim -v
 # - nim e install_tools.nims
 # - ln -s $HOME/.nimble/bin/nimble /usr/local/bin/nimble

@@ -1,7 +1,8 @@
 language: bash
+sudo: true
 
 install:
-- apt-get install -y build-essential gcc
+- sudo apt-get install -y build-essential gcc
 - wget http://nim-lang.org/download/nim-0.15.0.tar.xz
 - tar xvf nim-0.15.0.tar.xz
 - cd nim-0.15.0/

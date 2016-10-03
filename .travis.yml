@@ -9,11 +9,8 @@ install:
 - cd nim-0.15.0/
 - sh build.sh
 - sudo ln -s $PWD/bin/nim /usr/local/bin/nim
-- nim -v
 - nim e install_tools.nims
-- ls -la $PWD/bin
 - sudo ln -s $PWD/bin/nimble /usr/local/bin/nimble
-- nimble -v
 
 script:
 - nimble install

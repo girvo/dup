@@ -7,4 +7,4 @@ import unittest
 
 suite "dup":
   test "the world hasnt exploded":
-    require(1 == 0)
+    require(1 == 1)

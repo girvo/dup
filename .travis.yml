@@ -1,7 +1,7 @@
 language: c
 sudo: false
 os: linux
-compiler: clang
+compiler: gcc
 
 addons:
   apt:
@@ -9,18 +9,16 @@ addons:
     - libcurl4-openssl-dev
     - libsdl1.2-dev
     - libgc-dev
+    - git
 
 install:
-- wget http://nim-lang.org/download/nim-0.15.0.tar.xz
-- tar xvf nim-0.15.0.tar.xz
-- cd nim-0.15.0/
-- sh build.sh
-- ln -s $PWD/bin/nim /usr/local/bin/nim
-- nim -v
-- nim e install_tools.nims
-- ln -s $HOME/.nimble/bin/nimble /usr/local/bin/nimble
-- nimble -v
+- gcc -v
+# - nim -v
+# - nim e install_tools.nims
+# - ln -s $HOME/.nimble/bin/nimble /usr/local/bin/nimble
+# - nimble -v
 
 script:
+- exit 1
 - nimble install
 - make test

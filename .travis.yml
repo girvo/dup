@@ -1,5 +1,4 @@
 language: c
-sudo: true
 dist: trusty
 compiler: gcc
 
@@ -8,10 +7,11 @@ install:
 - tar xvf nim-0.15.0.tar.xz
 - cd nim-0.15.0/
 - sh build.sh
-- ln -s $PWD/bin/nim /usr/local/bin/nim
+- export PATH="$PWD/bin:$PATH"
 - nim -v
 - nim e install_tools.nims
 - ln -s $HOME/.nimble/bin/nimble /usr/local/bin/nimble
+- export PATH="$HOME/.nimble/bin/nimble:$PATH"
 - nimble -v
 
 script:

@@ -1,4 +1,4 @@
-# dup: local Docker web development
+# dup: local Docker web development [![Build Status](https://travis-ci.org/girvo/dup.svg?branch=master)](https://travis-ci.org/girvo/dup)
 
 ```
 Declaratively define and run stateful Docker containers for web development.

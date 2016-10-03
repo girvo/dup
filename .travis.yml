@@ -10,7 +10,6 @@ install:
 - export PATH="$PWD/bin:$PATH"
 - nim -v
 - nim e install_tools.nims
-- ln -s $HOME/.nimble/bin/nimble /usr/local/bin/nimble
 - export PATH="$HOME/.nimble/bin/nimble:$PATH"
 - nimble -v
 

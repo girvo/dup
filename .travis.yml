@@ -3,7 +3,11 @@ sudo: true
 
 install:
 - sudo apt-get update
-- sudo apt-get install -y build-essential gcc
+- sudo apt-get install -y build-essential clang
+- sudo update-alternatives --config clang
+- sudo update-alternatives --config clang++
+- sudo update-alternatives --config cc
+- sudo update-alternatives --config c++
 - wget http://nim-lang.org/download/nim-0.15.0.tar.xz
 - tar xvf nim-0.15.0.tar.xz
 - cd nim-0.15.0/

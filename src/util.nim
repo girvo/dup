@@ -7,6 +7,7 @@ import random
 import net
 import terminal
 import random
+import osproc
 
 import private/types
 import database
@@ -102,4 +103,3 @@ proc writeStatus*(name: string, status: bool) =
     stdout.write("not running")
   stdout.resetAttributes()
   stdout.write("\n")
-

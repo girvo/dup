@@ -50,6 +50,20 @@ proc checkDockerfile*() {.raises: [].} =
     writeError(getCurrentExceptionMsg(), true)
     quit(1)
 
+proc startMysqlCommand*(conf: ProjectConfig, port: int): string {.raises: [],
+                        noSideEffect.} =
+  ## Builds the command used to start MySQL database containers
+  ## Quotes the configuration passed into the command construction
+  result = join([
+    "docker run -d",
+    "--name", quoteShellPosix(conf.db),
+    "--volumes-from", quoteShellPosix(conf.data),
+    "-e MYSQL_PASS=" & quoteShellPosix(conf.dbConf.password),
+    "-e ON_CREATE_DB=" & quoteShellPosix(conf.dbConf.name),
+    "-p", $port & ":3306",
+    conf.dbConf.getImageName()
+  ], " ")
+
 proc startMysql*(project: string, dbname: string, dbpass: string) =
   writeMsg("Starting MySQL...")
   let chosenPort = getAndCheckRandomPort()

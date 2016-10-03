@@ -1,5 +1,10 @@
 # Changelog
 
+## v1.0.0-RC3
+
+- Merged fix from Albert; typo in the `up` command string
+- Added empty test harness to start building out tests
+
 ## v1.0.0-RC2
 
 - Removes need for `.up.state` file

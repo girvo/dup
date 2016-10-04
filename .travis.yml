@@ -3,7 +3,7 @@ sudo: true
 dist: trusty
 compiler: gcc
 
-install:
+before_install:
   - wget http://nim-lang.org/download/nim-0.15.0.tar.xz
   - tar xvf nim-0.15.0.tar.xz
   - cd nim-0.15.0/
@@ -13,6 +13,6 @@ install:
   - sudo ln -s $PWD/bin/nimble /usr/local/bin/nimble
   - cd ..
 
-script:
-  - nimble -y install
-  - make test
+install: nimble -y install
+
+script: make test

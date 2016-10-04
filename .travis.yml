@@ -15,4 +15,6 @@ before_install:
 
 install: nimble -y install
 
-script: make test
+script:
+ - make test
+ - make

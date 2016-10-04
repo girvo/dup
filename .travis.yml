@@ -11,6 +11,7 @@ install:
 - sudo ln -s $PWD/bin/nim /usr/local/bin/nim
 - nim e install_tools.nims
 - sudo ln -s $PWD/bin/nimble /usr/local/bin/nimble
+- cd ..
 
 script:
 - nimble install

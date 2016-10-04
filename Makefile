@@ -30,4 +30,4 @@ test: ./test/runner
 ./test/runner: $(wildcard ./**/*.nim)
 	nim c -x:on $(TEST_DIR)/runner
 
-.PHONY: all clean run release linux test
+.PHONY: all clean run release linux test ./test/runner

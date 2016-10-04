@@ -3,8 +3,4 @@
 ## Author: Josh Girvin
 ## License: MIT
 
-import unittest
-
-suite "dup":
-  test "the world hasnt exploded":
-    require(1 == 1)
+import ./docker_test

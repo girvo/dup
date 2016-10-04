@@ -4,15 +4,15 @@ dist: trusty
 compiler: gcc
 
 install:
-- wget http://nim-lang.org/download/nim-0.15.0.tar.xz
-- tar xvf nim-0.15.0.tar.xz
-- cd nim-0.15.0/
-- sh build.sh
-- sudo ln -s $PWD/bin/nim /usr/local/bin/nim
-- nim e install_tools.nims
-- sudo ln -s $PWD/bin/nimble /usr/local/bin/nimble
-- cd ..
+  - wget http://nim-lang.org/download/nim-0.15.0.tar.xz
+  - tar xvf nim-0.15.0.tar.xz
+  - cd nim-0.15.0/
+  - sh build.sh
+  - sudo ln -s $PWD/bin/nim /usr/local/bin/nim
+  - nim e install_tools.nims
+  - sudo ln -s $PWD/bin/nimble /usr/local/bin/nimble
+  - cd ..
 
 script:
-- nimble install
-- make test
+  - nimble -y install
+  - make test

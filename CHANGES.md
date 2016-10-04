@@ -3,7 +3,10 @@
 ## v1.0.0-RC3
 
 - Merged fix from Albert; typo in the `up` command string
-- Added empty test harness to start building out tests
+- Added test harness to start building out tests
+- Added tests for `docker.parseVersionStr`
+- Added TravisCI support
+- Fixed issue #17, version string parsing with beta Docker versions
 
 ## v1.0.0-RC2
 

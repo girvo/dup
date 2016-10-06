@@ -1,4 +1,5 @@
 NIM_OPTS=--parallelBuild:1 --define:nimOldSplit
+RELEASE_OPTS=--opt:size
 APP_NAME=dup
 BIN_DIR=build
 SRC_DIR=src
@@ -13,12 +14,15 @@ clean:
 run: $(BIN_DIR)/$(APP_NAME)
 	@$<
 
+macos: release
+	strip - $(BIN_DIR)/$(APP_NAME)
+
 linux:
 	docker build -t dup:latest .
 	docker run --rm -v $(CURDIR)/build/linux/:/build dup:latest cp /dup/build/dup /build/dup
 
 release: clean
-	nim c $(NIM_OPTS) --define:release --out:$(BIN_DIR)/$(APP_NAME) $(SRC_DIR)/$(APP_NAME)
+	nim c $(NIM_OPTS) --define:release $(RELEASE_OPTS) --out:$(BIN_DIR)/$(APP_NAME) $(SRC_DIR)/$(APP_NAME)
 
 $(BIN_DIR)/$(APP_NAME): $(wildcard $SRC_DIR/**/*.nim)
 	nim c $(NIM_OPTS) --out:$(BIN_DIR)/$(APP_NAME) $(SRC_DIR)/$(APP_NAME)

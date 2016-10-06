@@ -15,3 +15,4 @@ WORKDIR /dup
 RUN nimble -y install
 ENV NIM_ENV=release
 RUN make release
+RUN strip -s build/dup

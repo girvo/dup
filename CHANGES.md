@@ -1,5 +1,9 @@
 # Changelog
 
+## v1.0.0-RC4
+
+- Fixed bug where `dup up` on an "uninitialised" project that has `"type": "none"` would fail
+
 ## v1.0.0-RC3
 
 - Merged fix from Albert; typo in the `up` command string

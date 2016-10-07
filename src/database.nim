@@ -25,7 +25,8 @@ proc newDBConfig*(config: JsonNode): DatabaseConfig {.raises: [DBConfigError].} 
     result = PostgreSQL.newDBConfig(
       config.getOrDefault("pass").getStr(),
       config.getOrDefault("name").getStr(),
-      config.getOrDefault("user").getStr())
+      config.getOrDefault("user").getStr(),
+      config.getOrDefault("image").getStr("postgres:9.5"))
   of "mongodb":
     result = MongoDB.newDBConfig()
   of "none":

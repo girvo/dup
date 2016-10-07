@@ -1,5 +1,8 @@
 # Changelog
 
+## v1.0.0-RC5
+- Supports optional "image" setting in "db" config for PostgreSQL containers only. The "image" setting can specify a custom Docker image name/tag for the database container.
+
 ## v1.0.0-RC4
 
 - Fixed bug where `dup up` on an "uninitialised" project that has `"type": "none"` would fail

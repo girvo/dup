@@ -76,12 +76,25 @@ proc startMysql*(conf: ProjectConfig) =
     quit(exitCode)
   writeSuccess("MySQL started, and exposed on host port " & $chosenPort)
 
+proc startPostgresCommand*(conf: ProjectConfig, port: int): string {raises: [], noSideEffect.} =
+  ## Builds the command used to start PostgreSQL database containers
+  ## Quotes the configuration passed into the command construction
+  result = join([
+    "docker run -d",
+    "--name", quoteShellPosix(conf.db),
+    "--volumes-from", quoteShellPosix(conf.data),
+    "-e POSTGRES_PASSWORD=" & quoteShellPosix(conf.dbConf.password),
+    "-e POSTGRES_DB=" & quoteShellPosix(conf.dbConf.name),
+    "-e POSTGRES_USER=" & quoteShellPosix(conf.dbConf.username),
+    "-p", $port & ":5432",
+    conf.dbConf.getImageName()
+  ], " ")
+
 proc startPostgres*(conf: ProjectConfig) {.raises: [].} =
   writeMsg("Starting Postgres...")
   let
     chosenPort = getAndCheckRandomPort()
-    portFragment = $chosenPort & ":5432"
-    command = "docker run -d --name " & conf.db & " --volumes-from " & conf.data & " -e POSTGRES_PASSWORD=" & conf.dbConf.password & " -e POSTGRES_DB=" & conf.dbConf.name & " -e POSTGRES_USER=" & conf.dbConf.username & " -p " & portFragment & " " & conf.dbConf.getImageName()
+    command = startPostgresCommand(conf, chosenPort)
   writeCmd(command)
   let exitCode = execCmd command
   if exitCode != 0:

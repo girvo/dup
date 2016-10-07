@@ -110,7 +110,7 @@ proc up*(conf: ProjectConfig) {.raises: [].} =
     startMysql(conf)
     startWeb(conf.name, conf.port, conf.volume, conf.envVars, true)
   of PostgreSQL:
-    startPostgres(conf.name, conf.dbConf.name, conf.dbConf.username, conf.dbConf.password, conf.dbConf.image)
+    startPostgres(conf)
     startWeb(conf.name, conf.port, conf.volume, conf.envVars, true)
   of MongoDB:
     startMongo(conf)

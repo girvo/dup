@@ -47,7 +47,6 @@ proc newDBPostgreSQL(pass: string, name: string, user: string, image: string): D
   if pass.len == 0: raise newException(DBConfigError, "'pass' must be set and non-empty")
   if name.len == 0: raise newException(DBConfigError, "'name' must be set and non-empty")
   if user.len == 0: raise newException(DBConfigError, "'user' must be set and non-empty")
-  if image.len == 0: raise newException(DBConfigError, "'image' must be set and non-empty")
   result = DatabaseConfig(
     kind: PostgreSQL,
     password: pass,

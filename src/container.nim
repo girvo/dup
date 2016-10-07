@@ -76,13 +76,12 @@ proc startMysql*(conf: ProjectConfig) =
     quit(exitCode)
   writeSuccess("MySQL started, and exposed on host port " & $chosenPort)
 
-proc startPostgres*(project: string, dbname: string, dbuser: string,
-                    dbpass: string, image: string) {.raises: [].} =
+proc startPostgres*(conf: ProjectConfig) {.raises: [].} =
   writeMsg("Starting Postgres...")
   let
     chosenPort = getAndCheckRandomPort()
     portFragment = $chosenPort & ":5432"
-    command = "docker run -d --name " & project & "-db --volumes-from " & project & "-data -e POSTGRES_PASSWORD=" & dbpass & " -e POSTGRES_DB=" & dbname & " -e POSTGRES_USER=" & dbuser & " -p " & portFragment & " " & image
+    command = "docker run -d --name " & conf.db & " --volumes-from " & conf.data & " -e POSTGRES_PASSWORD=" & conf.dbConf.password & " -e POSTGRES_DB=" & conf.dbConf.name & " -e POSTGRES_USER=" & conf.dbConf.username & " -p " & portFragment & " " & conf.dbConf.getImageName()
   writeCmd(command)
   let exitCode = execCmd command
   if exitCode != 0:

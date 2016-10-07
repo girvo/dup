@@ -13,6 +13,7 @@ type
     case kind: DatabaseType
     of PostgreSQL:
       username*: string
+      image*: string
     else: discard
     # Shared properties across the ADT -- empty for None et al.
     name*: string
@@ -40,7 +41,7 @@ proc newDBMySQL(pass: string, name: string): DatabaseConfig
     password: pass,
     name: name)
 
-proc newDBPostgreSQL(pass: string, name: string, user: string): DatabaseConfig
+proc newDBPostgreSQL(pass: string, name: string, user: string, image: string): DatabaseConfig
                      {.raises: [DBConfigError].} =
   ## Creates a new DatabaseConfig of the "PostgreSQL" type
   if pass.len == 0: raise newException(DBConfigError, "'pass' must be set and non-empty")
@@ -50,7 +51,8 @@ proc newDBPostgreSQL(pass: string, name: string, user: string): DatabaseConfig
     kind: PostgreSQL,
     password: pass,
     name: name,
-    username: user)
+    username: user,
+    image: image)
 
 proc newDBMongoDB*(): DatabaseConfig {.raises: [].} =
   result = DatabaseConfig(
@@ -59,13 +61,13 @@ proc newDBMongoDB*(): DatabaseConfig {.raises: [].} =
     name: "")
 
 proc newDBConfig*(dbType: DatabaseType, pass = "", name = "",
-                  user = ""): DatabaseConfig {.raises: [DBConfigError].} =
+                  user = "", image = ""): DatabaseConfig {.raises: [DBConfigError].} =
   ## Creates a new database configuration based on a given type param
   case dbType
   of MySQL:
     result = newDBMySQL(pass, name)
   of PostgreSQL:
-    result = newDBPostgreSQL(pass, name, user)
+    result = newDBPostgreSQL(pass, name, user, image)
   of MongoDB:
     result = newDBMongoDB()
   of None:

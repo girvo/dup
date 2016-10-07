@@ -76,7 +76,7 @@ proc startMysql*(conf: ProjectConfig) =
     quit(exitCode)
   writeSuccess("MySQL started, and exposed on host port " & $chosenPort)
 
-proc startPostgresCommand*(conf: ProjectConfig, port: int): string {raises: [], noSideEffect.} =
+proc startPostgresCommand*(conf: ProjectConfig, port: int): string {.raises: [], noSideEffect.} =
   ## Builds the command used to start PostgreSQL database containers
   ## Quotes the configuration passed into the command construction
   result = join([

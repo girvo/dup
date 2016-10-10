@@ -121,24 +121,23 @@ proc startMongo*(conf: ProjectConfig) {.raises: [].} =
   writeCmd(command)
   let exitCode = execCmd command
   if exitCode != 0:
-    writeError("Starting MongoDB fialed. Check the ouput above")
+    writeError("Starting MongoDB failed. Check the ouput above")
     quit(exitCode)
   writeSuccess("MongoDB started, and exposed on host port " & $chosenPort)
 
-proc startWeb*(project: string, portMapping="", folderMapping: string,
-               env: Args, hasDB: bool = true) =
+proc startWeb*(conf: ProjectConfig, hasDB: bool = true) =
   ## TODO: Refactor to leverage the config object instead of raw properties
   writeMsg("Starting web server...")
   var
-    hostname = project & ".docker"
-  for arg in env:
+    hostname = conf.name & ".docker"
+  for arg in conf.envVars:
     if arg.name == "VIRTUAL_HOST":
       hostname = arg.value
   let
-    link = if hasDB: "--link " & project & "-db:db " else: ""
-    folder = if folderMapping == "": "-v $PWD/code:/var/www " else: "-v $PWD/" & folderMapping & " "
-    port = if portMapping == "": " " else: "-p " & portMapping & " "
-    command = "docker run -d -h " & hostname & " --name " & project & "-web " & port & $env & " " & folder & link & " -e TERM=xterm-256color -e VIRTUAL_HOST=" & hostname & " " & project & ":latest"
+    link = if hasDB: "--link " & conf.db & ":db " else: ""
+    folder = if conf.volume == "": "-v $PWD/code:/var/www " else: "-v $PWD/" & conf.volume
+    port = if conf.port == "": " " else: "-p " & conf.port & " "
+    command = "docker run -d -h " & hostname & " --name " & conf.web & port & $conf.envVars & " " & folder & link & " -e TERM=xterm-256color -e VIRTUAL_HOST=" & hostname & " " & conf.name & ":latest"
   writeCmd(command)
   let exitCode = execCmd command
   if exitCode != 0:

@@ -105,19 +105,24 @@ proc printStatus*(conf: ProjectConfig) {.raises: [].} =
 ## Starts the web container, and database container if configured
 proc up*(conf: ProjectConfig) {.raises: [].} =
   needsInit(conf)
+  ## Start the DB container first, if any
   case conf.dbConf.kind
   of MySQL:
     startMysql(conf)
-    startWeb(conf.name, conf.port, conf.volume, conf.envVars, true)
   of PostgreSQL:
     startPostgres(conf)
-    startWeb(conf.name, conf.port, conf.volume, conf.envVars, true)
   of MongoDB:
     startMongo(conf)
-    startWeb(conf.name, conf.port, conf.volume, conf.envVars, true)
+  of None: discard
+
+  ## Start the web container
+  case conf.dbConf.kind
   of None:
-    # Start only the web container if we've got an invalid type (or None)
-    startWeb(conf.name, conf.port, conf.volume, conf.envVars, false)
+    # Do a thing
+    startWeb(conf, false)
+  else:
+    # Do a thing with a DB
+    startWeb(conf, true)
   quit(0)
 
 ## Stops and removes the containers

@@ -170,6 +170,7 @@ proc build*(conf: ProjectConfig, noCache: bool = false) =
   ].join(" ")
   # Run the build command
   writeMsg("Building latest image...")
+  writeCmd(command)
   let exitCode = execCmd(command)
   if exitCode != 0:
     quit(exitCode)

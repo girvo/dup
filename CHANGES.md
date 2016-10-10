@@ -1,5 +1,9 @@
 # Changelog
 
+## v1.0.0
+- Adds shell quoting to improve security of how Docker commands are executed
+- Prints the full "docker build …" command run for a "dup build"
+
 ## v1.0.0-RC5
 - Supports optional "image" setting in "db" config for PostgreSQL containers only. The "image" setting can specify a custom Docker image name/tag for the database container.
 

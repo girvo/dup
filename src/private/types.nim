@@ -81,6 +81,7 @@ type
     name: string,
     value: string]
   Args* = seq[Arg]
+  BuildArgs* = seq[Arg]
   ProjectConfig* = ref object
     name*: string
     port*: string
@@ -88,7 +89,7 @@ type
     dockerfile*: string
     dbConf*: DatabaseConfig
     envVars*: Args
-    buildArgs*: Args
+    buildArgs*: BuildArgs
 
 type
   ConfigError* = object of IOError
@@ -101,7 +102,7 @@ proc newArg*(name: string, value: string): Arg {.raises: [].} =
     value: value)
 
 proc newProjectConfig*(name: string, dbConf: DatabaseConfig, port: string,
-                       envVars: Args, buildArgs: Args, volume: string,
+                       envVars: Args, buildArgs: BuildArgs, volume: string,
                        dockerfile: string): ProjectConfig {.raises: [].} =
   ## Build a new project config (used internally)
   ## TODO: Refactor the order of arguments to this proc

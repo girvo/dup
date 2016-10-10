@@ -151,18 +151,23 @@ proc down*(conf: ProjectConfig) {.raises: [].} =
 
 ## Builds the image, passing build arguments in
 proc build*(conf: ProjectConfig, noCache: bool = false) =
-  var
-    buildArgs = ""
-    hasEnv = false
+  var hasEnv = false
+  var buildArgs = argsToStr[BuildArgs](conf.buildArgs)
   for arg in conf.buildArgs:
-    buildArgs &= " --build-arg " & arg.name & "=" & arg.value
     if arg.name == "env": hasEnv = true
   if not hasEnv:
     buildArgs &= " --build-arg env=dev"
   # Setup the build command
   let projectTag = conf.name & ":latest"
   let cacheOpt = if noCache: "--no-cache" else: ""
-  let command = ["docker build", buildArgs, cacheOpt, "-f", conf.dockerfile, "-t", projectTag, "."].join(" ")
+  let command = [
+    "docker build",
+    buildArgs,
+    cacheOpt,
+    "-f", conf.dockerfile,
+    "-t", projectTag,
+    "."
+  ].join(" ")
   # Run the build command
   writeMsg("Building latest image...")
   let exitCode = execCmd(command)

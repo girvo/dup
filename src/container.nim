@@ -125,9 +125,8 @@ proc startMongo*(conf: ProjectConfig) {.raises: [].} =
     quit(exitCode)
   writeSuccess("MongoDB started, and exposed on host port " & $chosenPort)
 
-proc startWeb*(conf: ProjectConfig, hasDB: bool = true) =
-  ## TODO: Refactor to leverage the config object instead of raw properties
-  writeMsg("Starting web server...")
+proc startWebCmd*(conf: ProjectConfig, hasDb: bool = true): string {.raises: [],
+                  noSideEffect.} =
   var
     hostname = conf.name & ".docker"
   for arg in conf.envVars:
@@ -135,9 +134,28 @@ proc startWeb*(conf: ProjectConfig, hasDB: bool = true) =
       hostname = arg.value
   let
     link = if hasDB: "--link " & conf.db & ":db " else: ""
-    folder = if conf.volume == "": "-v $PWD/code:/var/www " else: "-v $PWD/" & conf.volume
-    port = if conf.port == "": " " else: "-p " & conf.port & " "
-    command = "docker run -d -h " & hostname & " --name " & conf.web & port & $conf.envVars & " " & folder & link & " -e TERM=xterm-256color -e VIRTUAL_HOST=" & hostname & " " & conf.name & ":latest"
+    port = if conf.port == "": "" else: "-p " & conf.port
+  var folder = "-v $PWD/" & conf.volume
+  if conf.volume == "":
+    folder = "-v $PWD/code:/var/www"
+
+  result = join([
+    "docker run",
+    "-d", "-h", quoteShellPosix(hostname),
+    "--name", quoteShellPosix(conf.web),
+    port,
+    $conf.envVars,
+    folder,
+    link,
+    "-e TERM=xterm-256color",
+    "-e VIRTUAL_HOST=" & quoteShellPosix(hostname),
+    quoteShellPosix(conf.name & ":latest")
+  ], " ")
+
+proc startWeb*(conf: ProjectConfig, hasDB: bool = true) =
+  ## TODO: Refactor to leverage the config object instead of raw properties
+  writeMsg("Starting web server...")
+  let command = startWebCmd(conf, hasDb)
   writeCmd(command)
   let exitCode = execCmd command
   if exitCode != 0:
@@ -145,7 +163,7 @@ proc startWeb*(conf: ProjectConfig, hasDB: bool = true) =
 
 proc inspectContainer*(containerName: string): JsonNode =
   try:
-    let (output, exitCode) = execCmdEx("docker inspect " & containerName, {poUsePath})
+    let (output, exitCode) = execCmdEx("docker inspect " & quoteShellPosix(containerName), {poUsePath})
     if exitCode != 0:
       raise newException(IOError, "docker-inspect failed")
     result = parseJson(output)

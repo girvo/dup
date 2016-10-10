@@ -37,40 +37,34 @@ proc init*(conf: ProjectConfig) {.raises: [].} =
     writeMsg("Initialising " & $conf.dbConf.kind & " volume-only container...")
     shouldRunCommand = true
     command = join([
-      "docker run -d -v",
-      conf.dbConf.getVolumePath(),
-      "--name",
-      conf.data,
-      "--entrypoint",
-      "/bin/echo",
-      conf.dbConf.getImageName()
+      "docker run -d",
+      "-v", quoteShellPosix(conf.dbConf.getVolumePath()),
+      "--name", quoteShellPosix(conf.data),
+      "--entrypoint", "/bin/echo",
+      quoteShellPosix(conf.dbConf.getImageName())
     ], " ")
   of PostgreSQL:
     writeMsg("Initialising " & $conf.dbConf.kind & " volume-only container...")
     shouldRunCommand = true
     command = join([
-      "docker run -d -v",
-      conf.dbConf.getVolumePath(),
-      "--name",
-      conf.data,
-      "-e POSTGRES_PASSWORD=" & conf.dbConf.password,
-      "-e POSTGRES_DB" & conf.dbConf.name,
-      "-e POSTGRES_USER" & conf.dbConf.username,
-      "--entrypoint",
-      "/bin/echo",
-      conf.dbConf.getImageName()
+      "docker run -d",
+      "-v", quoteShellPosix(conf.dbConf.getVolumePath()),
+      "--name", quoteShellPosix(conf.data),
+      "-e POSTGRES_PASSWORD=" & quoteShellPosix(conf.dbConf.password),
+      "-e POSTGRES_DB=" & quoteShellPosix(conf.dbConf.name),
+      "-e POSTGRES_USER=" & quoteShellPosix(conf.dbConf.username),
+      "--entrypoint", "/bin/echo",
+      quoteShellPosix(conf.dbConf.getImageName())
     ], " ")
   of MongoDB:
     writeMsg("Initialising " & $conf.dbConf.kind & " volume-only container...")
     shouldRunCommand = true
     command = join([
-      "docker run -d -v",
-      conf.dbConf.getVolumePath(),
-      "--name",
-      conf.data,
-      "--entrypoint",
-      "/bin/echo",
-      conf.dbConf.getImageName()
+      "docker run -d",
+      "-v", quoteShellPosix(conf.dbConf.getVolumePath()),
+      "--name", quoteShellPosix(conf.data),
+      "--entrypoint", "/bin/echo",
+      quoteShellPosix(conf.dbConf.getImageName()),
     ], " ")
   of None:
     writeMsg("No database requested. If you change this in the future, you will need to reinitialise your dup project")

@@ -50,7 +50,7 @@ proc checkDockerfile*() {.raises: [].} =
     writeError(getCurrentExceptionMsg(), true)
     quit(1)
 
-proc startMysqlCommand*(conf: ProjectConfig, port: int): string {.raises: [],
+proc startMysqlCmd*(conf: ProjectConfig, port: int): string {.raises: [],
                         noSideEffect.} =
   ## Builds the command used to start MySQL database containers
   ## Quotes the configuration passed into the command construction
@@ -61,14 +61,14 @@ proc startMysqlCommand*(conf: ProjectConfig, port: int): string {.raises: [],
     "-e MYSQL_PASS=" & quoteShellPosix(conf.dbConf.password),
     "-e ON_CREATE_DB=" & quoteShellPosix(conf.dbConf.name),
     "-p", $port & ":3306",
-    conf.dbConf.getImageName()
+    quoteShellPosix(conf.dbConf.getImageName())
   ], " ")
 
 proc startMysql*(conf: ProjectConfig) =
   writeMsg("Starting MySQL...")
   let
     chosenPort = getAndCheckRandomPort()
-    command = startMysqlCommand(conf, chosenPort)
+    command = startMysqlCmd(conf, chosenPort)
   writeCmd(command)
   let exitCode = execCmd command
   if exitCode != 0:
@@ -76,7 +76,8 @@ proc startMysql*(conf: ProjectConfig) =
     quit(exitCode)
   writeSuccess("MySQL started, and exposed on host port " & $chosenPort)
 
-proc startPostgresCommand*(conf: ProjectConfig, port: int): string {.raises: [], noSideEffect.} =
+proc startPostgresCmd*(conf: ProjectConfig, port: int): string {.raises: [],
+                       noSideEffect.} =
   ## Builds the command used to start PostgreSQL database containers
   ## Quotes the configuration passed into the command construction
   result = join([
@@ -87,14 +88,14 @@ proc startPostgresCommand*(conf: ProjectConfig, port: int): string {.raises: [],
     "-e POSTGRES_DB=" & quoteShellPosix(conf.dbConf.name),
     "-e POSTGRES_USER=" & quoteShellPosix(conf.dbConf.username),
     "-p", $port & ":5432",
-    conf.dbConf.getImageName()
+    quoteShellPosix(conf.dbConf.getImageName())
   ], " ")
 
 proc startPostgres*(conf: ProjectConfig) {.raises: [].} =
   writeMsg("Starting Postgres...")
   let
     chosenPort = getAndCheckRandomPort()
-    command = startPostgresCommand(conf, chosenPort)
+    command = startPostgresCmd(conf, chosenPort)
   writeCmd(command)
   let exitCode = execCmd command
   if exitCode != 0:
@@ -102,18 +103,21 @@ proc startPostgres*(conf: ProjectConfig) {.raises: [].} =
     quit(exitCode)
   writeSuccess("Postgres started, and exposed on host port " & $chosenPort)
 
+proc startMongoCmd*(conf: ProjectConfig, port: int): string {.raises: [],
+                    noSideEffect.} =
+  result = join([
+    "docker run -d",
+    "--name", quoteShellPosix(conf.db),
+    "--volumes-from", quoteShellPosix(conf.data),
+    "-p", $port & ":27017",
+    quoteShellPosix(conf.dbConf.getImageName())
+  ], " ")
+
 proc startMongo*(conf: ProjectConfig) {.raises: [].} =
   writeMsg("Starting MongoDB...")
   let
     chosenPort = getAndCheckRandomPort()
-    portFragment = $chosenPort & ":27017"
-    command = join([
-      "docker run -d",
-      "--name", conf.db,
-      "--volumes-from", conf.data,
-      "-p", portFragment,
-      conf.dbConf.getImageName
-    ], " ")
+    command = startMongoCmd(conf, chosenPort)
   writeCmd(command)
   let exitCode = execCmd command
   if exitCode != 0:
@@ -121,7 +125,8 @@ proc startMongo*(conf: ProjectConfig) {.raises: [].} =
     quit(exitCode)
   writeSuccess("MongoDB started, and exposed on host port " & $chosenPort)
 
-proc startWeb*(project: string, portMapping="", folderMapping: string, env: Args, hasDB: bool = true) =
+proc startWeb*(project: string, portMapping="", folderMapping: string,
+               env: Args, hasDB: bool = true) =
   ## TODO: Refactor to leverage the config object instead of raw properties
   writeMsg("Starting web server...")
   var

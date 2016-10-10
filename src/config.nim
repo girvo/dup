@@ -4,15 +4,17 @@
 ## License: MIT
 
 import future
+import osproc
 import json
 import tables
 import sequtils
+import typetraits
 import private/types
 
-proc parseEnvTable*(rawEnv: OrderedTable[string, JsonNode]): Args
+proc parseEnvTable*[T](rawEnv: OrderedTable[string, JsonNode]): T
                    {.raises: [ProjectConfigError].} =
   ## Parses JsonNode tables into Args sequences
-  result = @[]
+  result = newSeq[Arg]()
   var
     arg: Arg
     value: string = ""
@@ -33,8 +35,8 @@ proc createProjectConfig*(raw: JsonNode, dbConf: DatabaseConfig): ProjectConfig
     raise newException(ProjectConfigError, "'project' key ")
   let port = raw.getOrDefault("port").getStr("") # Default to empty
   let volume = raw.getOrDefault("volume").getStr("") # Default to empty
-  let env = parseEnvTable(raw.getOrDefault("env").getFields())
-  let buildArgs = parseEnvTable(raw.getOrDefault("buildArgs").getFields())
+  let env = parseEnvTable[Args](raw.getOrDefault("env").getFields())
+  let buildArgs = parseEnvTable[BuildArgs](raw.getOrDefault("buildArgs").getFields())
   let dockerfile = raw.getOrDefault("dockerfile").getStr("Dockerfile")
   result = newProjectConfig(name, dbConf, port, env, buildArgs, volume, dockerfile)
 
@@ -50,8 +52,10 @@ proc data*(config: ProjectConfig): string =
   ## Helper proc for getting data container name
   result = config.name & "-data"
 
-proc `$`*(args: Args): string {.raises: [].} =
-  ## Convert the Args sequence to a Docker command string
+proc argsToStr*[T](args: T): string {.raises: [].} =
   result = ""
+  var marker = " -e "
+  if name(T) == "BuildArgs":
+    marker = " --build-arg "
   for arg in args:
-    result &= " -e " & arg.name & "=" & arg.value & ""
+    result &= marker & quoteShellPosix(arg.name) & "=" & quoteShellPosix(arg.value)

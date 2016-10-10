@@ -17,7 +17,7 @@ proc needsInit*(conf: ProjectConfig) =
   ## TODO: Refactor this to be a pragma applied to command procs
   if conf.dbConf.kind == None: return
   if not hasDataContainerBeenBuilt(conf):
-    writeError("Docker Up has not been initialised. Run 'dup init'")
+    writeError("Dup has not been initialised. Run 'dup init'")
     quit(252)
 
 ## Initialise the database
@@ -37,40 +37,34 @@ proc init*(conf: ProjectConfig) {.raises: [].} =
     writeMsg("Initialising " & $conf.dbConf.kind & " volume-only container...")
     shouldRunCommand = true
     command = join([
-      "docker run -d -v",
-      conf.dbConf.getVolumePath(),
-      "--name",
-      conf.data,
-      "--entrypoint",
-      "/bin/echo",
-      conf.dbConf.getImageName()
+      "docker run -d",
+      "-v", quoteShellPosix(conf.dbConf.getVolumePath()),
+      "--name", quoteShellPosix(conf.data),
+      "--entrypoint", "/bin/echo",
+      quoteShellPosix(conf.dbConf.getImageName())
     ], " ")
   of PostgreSQL:
     writeMsg("Initialising " & $conf.dbConf.kind & " volume-only container...")
     shouldRunCommand = true
     command = join([
-      "docker run -d -v",
-      conf.dbConf.getVolumePath(),
-      "--name",
-      conf.data,
-      "-e POSTGRES_PASSWORD=" & conf.dbConf.password,
-      "-e POSTGRES_DB" & conf.dbConf.name,
-      "-e POSTGRES_USER" & conf.dbConf.username,
-      "--entrypoint",
-      "/bin/echo",
-      conf.dbConf.getImageName()
+      "docker run -d",
+      "-v", quoteShellPosix(conf.dbConf.getVolumePath()),
+      "--name", quoteShellPosix(conf.data),
+      "-e POSTGRES_PASSWORD=" & quoteShellPosix(conf.dbConf.password),
+      "-e POSTGRES_DB=" & quoteShellPosix(conf.dbConf.name),
+      "-e POSTGRES_USER=" & quoteShellPosix(conf.dbConf.username),
+      "--entrypoint", "/bin/echo",
+      quoteShellPosix(conf.dbConf.getImageName())
     ], " ")
   of MongoDB:
     writeMsg("Initialising " & $conf.dbConf.kind & " volume-only container...")
     shouldRunCommand = true
     command = join([
-      "docker run -d -v",
-      conf.dbConf.getVolumePath(),
-      "--name",
-      conf.data,
-      "--entrypoint",
-      "/bin/echo",
-      conf.dbConf.getImageName()
+      "docker run -d",
+      "-v", quoteShellPosix(conf.dbConf.getVolumePath()),
+      "--name", quoteShellPosix(conf.data),
+      "--entrypoint", "/bin/echo",
+      quoteShellPosix(conf.dbConf.getImageName()),
     ], " ")
   of None:
     writeMsg("No database requested. If you change this in the future, you will need to reinitialise your dup project")
@@ -105,19 +99,24 @@ proc printStatus*(conf: ProjectConfig) {.raises: [].} =
 ## Starts the web container, and database container if configured
 proc up*(conf: ProjectConfig) {.raises: [].} =
   needsInit(conf)
+  ## Start the DB container first, if any
   case conf.dbConf.kind
   of MySQL:
     startMysql(conf)
-    startWeb(conf.name, conf.port, conf.volume, conf.envVars, true)
   of PostgreSQL:
     startPostgres(conf)
-    startWeb(conf.name, conf.port, conf.volume, conf.envVars, true)
   of MongoDB:
     startMongo(conf)
-    startWeb(conf.name, conf.port, conf.volume, conf.envVars, true)
+  of None: discard
+
+  ## Start the web container
+  case conf.dbConf.kind
   of None:
-    # Start only the web container if we've got an invalid type (or None)
-    startWeb(conf.name, conf.port, conf.volume, conf.envVars, false)
+    # Do a thing
+    startWeb(conf, false)
+  else:
+    # Do a thing with a DB
+    startWeb(conf, true)
   quit(0)
 
 ## Stops and removes the containers
@@ -152,20 +151,26 @@ proc down*(conf: ProjectConfig) {.raises: [].} =
 
 ## Builds the image, passing build arguments in
 proc build*(conf: ProjectConfig, noCache: bool = false) =
-  var
-    buildArgs = ""
-    hasEnv = false
+  var hasEnv = false
+  var buildArgs = argsToStr[BuildArgs](conf.buildArgs)
   for arg in conf.buildArgs:
-    buildArgs &= " --build-arg " & arg.name & "=" & arg.value
     if arg.name == "env": hasEnv = true
   if not hasEnv:
     buildArgs &= " --build-arg env=dev"
   # Setup the build command
   let projectTag = conf.name & ":latest"
   let cacheOpt = if noCache: "--no-cache" else: ""
-  let command = ["docker build", buildArgs, cacheOpt, "-f", conf.dockerfile, "-t", projectTag, "."].join(" ")
+  let command = [
+    "docker build",
+    buildArgs,
+    cacheOpt,
+    "-f", conf.dockerfile,
+    "-t", projectTag,
+    "."
+  ].join(" ")
   # Run the build command
   writeMsg("Building latest image...")
+  writeCmd(command)
   let exitCode = execCmd(command)
   if exitCode != 0:
     quit(exitCode)

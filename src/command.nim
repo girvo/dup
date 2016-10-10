@@ -17,7 +17,7 @@ proc needsInit*(conf: ProjectConfig) =
   ## TODO: Refactor this to be a pragma applied to command procs
   if conf.dbConf.kind == None: return
   if not hasDataContainerBeenBuilt(conf):
-    writeError("Docker Up has not been initialised. Run 'dup init'")
+    writeError("Dup has not been initialised. Run 'dup init'")
     quit(252)
 
 ## Initialise the database

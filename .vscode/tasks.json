@@ -27,6 +27,10 @@
             "taskName": "clean",
             "suppressTaskName": false,
             "echoCommand": true
+        },
+        {
+            "taskName": "test",
+            "isTestCommand": true
         }
     ]
 }

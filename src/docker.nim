@@ -19,9 +19,9 @@ proc exitWithErr(output: string, exitCode: int) {.raises: [].} =
   echo(output)
   quit(exitCode)
 
-proc parseVersionStr*(vstr: string): Option[VersionNumber] =
+proc parseVersionStr*(vstr: string): Option[VersionNumber] {.noSideEffect.} =
   let
-    version = re"^(\d+)\.(\d+)\.(\d+),?$"
+    version = re"^(\d+)\.(\d+)\.(\d+).*$"
     parsed = vstr.find(version)
     matched = parsed.isSome()
   if matched:

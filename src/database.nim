@@ -25,7 +25,8 @@ proc newDBConfig*(config: JsonNode): DatabaseConfig {.raises: [DBConfigError].} 
     result = PostgreSQL.newDBConfig(
       config.getOrDefault("pass").getStr(),
       config.getOrDefault("name").getStr(),
-      config.getOrDefault("user").getStr())
+      config.getOrDefault("user").getStr(),
+      config.getOrDefault("image").getStr())
   of "mongodb":
     result = MongoDB.newDBConfig()
   of "none":
@@ -51,7 +52,7 @@ proc getImageName*(conf: DatabaseConfig): string {.raises: [].} =
   of MySQL:
     result = "tutum/mysql"
   of PostgreSQL:
-    result = "postgres:9.5"
+    result = if conf.image == "": "postgres:9.5" else: conf.image
   of MongoDB:
     result = "mongo:3.3"
   of None:

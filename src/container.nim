@@ -50,11 +50,25 @@ proc checkDockerfile*() {.raises: [].} =
     writeError(getCurrentExceptionMsg(), true)
     quit(1)
 
-proc startMysql*(project: string, dbname: string, dbpass: string) =
+proc startMysqlCmd*(conf: ProjectConfig, port: int): string {.raises: [],
+                        noSideEffect.} =
+  ## Builds the command used to start MySQL database containers
+  ## Quotes the configuration passed into the command construction
+  result = join([
+    "docker run -d",
+    "--name", quoteShellPosix(conf.db),
+    "--volumes-from", quoteShellPosix(conf.data),
+    "-e MYSQL_PASS=" & quoteShellPosix(conf.dbConf.password),
+    "-e ON_CREATE_DB=" & quoteShellPosix(conf.dbConf.name),
+    "-p", $port & ":3306",
+    quoteShellPosix(conf.dbConf.getImageName())
+  ], " ")
+
+proc startMysql*(conf: ProjectConfig) =
   writeMsg("Starting MySQL...")
-  let chosenPort = getAndCheckRandomPort()
-  let portFragment = $chosenPort & ":3306"
-  let command = "docker run -d --name " & project & "-db --volumes-from " & project & "-data -e MYSQL_PASS=" & dbpass & " -e ON_CREATE_DB=" & dbname & " -p " & portFragment & " tutum/mysql"
+  let
+    chosenPort = getAndCheckRandomPort()
+    command = startMysqlCmd(conf, chosenPort)
   writeCmd(command)
   let exitCode = execCmd command
   if exitCode != 0:
@@ -62,13 +76,26 @@ proc startMysql*(project: string, dbname: string, dbpass: string) =
     quit(exitCode)
   writeSuccess("MySQL started, and exposed on host port " & $chosenPort)
 
-proc startPostgres*(project: string, dbname: string, dbuser: string,
-                    dbpass: string) {.raises: [].} =
+proc startPostgresCmd*(conf: ProjectConfig, port: int): string {.raises: [],
+                       noSideEffect.} =
+  ## Builds the command used to start PostgreSQL database containers
+  ## Quotes the configuration passed into the command construction
+  result = join([
+    "docker run -d",
+    "--name", quoteShellPosix(conf.db),
+    "--volumes-from", quoteShellPosix(conf.data),
+    "-e POSTGRES_PASSWORD=" & quoteShellPosix(conf.dbConf.password),
+    "-e POSTGRES_DB=" & quoteShellPosix(conf.dbConf.name),
+    "-e POSTGRES_USER=" & quoteShellPosix(conf.dbConf.username),
+    "-p", $port & ":5432",
+    quoteShellPosix(conf.dbConf.getImageName())
+  ], " ")
+
+proc startPostgres*(conf: ProjectConfig) {.raises: [].} =
   writeMsg("Starting Postgres...")
   let
     chosenPort = getAndCheckRandomPort()
-    portFragment = $chosenPort & ":5432"
-    command = "docker run -d --name " & project & "-db --volumes-from " & project & "-data -e POSTGRES_PASSWORD=" & dbpass & " -e POSTGRES_DB=" & dbname & " -e POSTGRES_USER=" & dbuser & " -p " & portFragment & " postgres:9.5"
+    command = startPostgresCmd(conf, chosenPort)
   writeCmd(command)
   let exitCode = execCmd command
   if exitCode != 0:
@@ -76,38 +103,59 @@ proc startPostgres*(project: string, dbname: string, dbuser: string,
     quit(exitCode)
   writeSuccess("Postgres started, and exposed on host port " & $chosenPort)
 
+proc startMongoCmd*(conf: ProjectConfig, port: int): string {.raises: [],
+                    noSideEffect.} =
+  result = join([
+    "docker run -d",
+    "--name", quoteShellPosix(conf.db),
+    "--volumes-from", quoteShellPosix(conf.data),
+    "-p", $port & ":27017",
+    quoteShellPosix(conf.dbConf.getImageName())
+  ], " ")
+
 proc startMongo*(conf: ProjectConfig) {.raises: [].} =
   writeMsg("Starting MongoDB...")
   let
     chosenPort = getAndCheckRandomPort()
-    portFragment = $chosenPort & ":27017"
-    command = join([
-      "docker run -d",
-      "--name", conf.db,
-      "--volumes-from", conf.data,
-      "-p", portFragment,
-      conf.dbConf.getImageName
-    ], " ")
+    command = startMongoCmd(conf, chosenPort)
   writeCmd(command)
   let exitCode = execCmd command
   if exitCode != 0:
-    writeError("Starting MongoDB fialed. Check the ouput above")
+    writeError("Starting MongoDB failed. Check the ouput above")
     quit(exitCode)
   writeSuccess("MongoDB started, and exposed on host port " & $chosenPort)
 
-proc startWeb*(project: string, portMapping="", folderMapping: string, env: Args, hasDB: bool = true) =
-  ## TODO: Refactor to leverage the config object instead of raw properties
-  writeMsg("Starting web server...")
+proc startWebCmd*(conf: ProjectConfig, hasDb: bool = true): string {.raises: [],
+                  noSideEffect.} =
   var
-    hostname = project & ".docker"
-  for arg in env:
+    hostname = conf.name & ".docker"
+  for arg in conf.envVars:
     if arg.name == "VIRTUAL_HOST":
       hostname = arg.value
   let
-    link = if hasDB: "--link " & project & "-db:db " else: ""
-    folder = if folderMapping == "": "-v $PWD/code:/var/www " else: "-v $PWD/" & folderMapping & " "
-    port = if portMapping == "": " " else: "-p " & portMapping & " "
-    command = "docker run -d -h " & hostname & " --name " & project & "-web " & port & $env & " " & folder & link & " -e TERM=xterm-256color -e VIRTUAL_HOST=" & hostname & " " & project & ":latest"
+    link = if hasDB: "--link " & conf.db & ":db " else: ""
+    port = if conf.port == "": "" else: "-p " & conf.port
+  var folder = "-v $PWD/" & conf.volume
+  if conf.volume == "":
+    folder = "-v $PWD/code:/var/www"
+
+  result = join([
+    "docker run",
+    "-d", "-h", quoteShellPosix(hostname),
+    "--name", quoteShellPosix(conf.web),
+    port,
+    argsToStr(conf.envVars),
+    folder,
+    link,
+    "-e TERM=xterm-256color",
+    "-e VIRTUAL_HOST=" & quoteShellPosix(hostname),
+    quoteShellPosix(conf.name & ":latest")
+  ], " ")
+
+proc startWeb*(conf: ProjectConfig, hasDB: bool = true) =
+  ## TODO: Refactor to leverage the config object instead of raw properties
+  writeMsg("Starting web server...")
+  let command = startWebCmd(conf, hasDb)
   writeCmd(command)
   let exitCode = execCmd command
   if exitCode != 0:
@@ -115,7 +163,7 @@ proc startWeb*(project: string, portMapping="", folderMapping: string, env: Args
 
 proc inspectContainer*(containerName: string): JsonNode =
   try:
-    let (output, exitCode) = execCmdEx("docker inspect " & containerName, {poUsePath})
+    let (output, exitCode) = execCmdEx("docker inspect " & quoteShellPosix(containerName), {poUsePath})
     if exitCode != 0:
       raise newException(IOError, "docker-inspect failed")
     result = parseJson(output)

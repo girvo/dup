@@ -1,5 +1,24 @@
 # Changelog
 
+## v1.0.0
+- Adds shell quoting to improve security of how Docker commands are executed
+- Prints the full "docker build …" command run for a "dup build"
+
+## v1.0.0-RC5
+- Supports optional "image" setting in "db" config for PostgreSQL containers only. The "image" setting can specify a custom Docker image name/tag for the database container.
+
+## v1.0.0-RC4
+
+- Fixed bug where `dup up` on an "uninitialised" project that has `"type": "none"` would fail
+
+## v1.0.0-RC3
+
+- Merged fix from Albert; typo in the `up` command string
+- Added test harness to start building out tests
+- Added tests for `docker.parseVersionStr`
+- Added TravisCI support
+- Fixed issue #17, version string parsing with beta Docker versions
+
 ## v1.0.0-RC2
 
 - Removes need for `.up.state` file

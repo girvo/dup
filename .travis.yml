@@ -1,0 +1,20 @@
+language: c
+sudo: true
+dist: trusty
+compiler: gcc
+
+before_install:
+  - wget http://nim-lang.org/download/nim-0.15.0.tar.xz
+  - tar xf nim-0.15.0.tar.xz
+  - cd nim-0.15.0/
+  - sh build.sh > /dev/null
+  - sudo ln -s $PWD/bin/nim /usr/local/bin/nim
+  - nim e install_tools.nims
+  - sudo ln -s $PWD/bin/nimble /usr/local/bin/nimble
+  - cd ..
+
+install: nimble -y install
+
+script:
+ - make test
+ - make

@@ -5,6 +5,7 @@ nimsuggest.log
 !.vscode/settings.json
 !.vscode/tasks.json
 !.vscode/launch.json
+.idea/
 nrpl*
 tnim*
 # Built binaries

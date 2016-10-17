@@ -9,3 +9,9 @@ nrpl*
 tnim*
 # Built binaries
 /build
+.idea/dup.iml
+.idea/misc.xml
+.idea/modules.xml
+.idea/vcs.xml
+.idea/workspace.xml
+.idea/copyright/profiles_settings.xml

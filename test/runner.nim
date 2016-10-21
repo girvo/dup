@@ -4,3 +4,4 @@
 ## License: MIT
 
 import ./docker_test
+import ./config_test

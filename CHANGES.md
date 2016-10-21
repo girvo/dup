@@ -1,5 +1,9 @@
 # Changelog
 
+## v1.0.2
+
+- Fixes a bug in v1.0.1 which broke "dup up"
+
 ## v1.0.1
 - Fixes a bug in v1.0.0 which broke "dup up"
 

@@ -12,3 +12,4 @@ tnim*
 /build
 /test/*
 !/test/**/*.nim
+.DS_Store

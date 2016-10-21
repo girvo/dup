@@ -1,5 +1,8 @@
 # Changelog
 
+## v1.0.1
+- Fixes a bug in v1.0.0 which broke "dup up"
+
 ## v1.0.0
 - Adds shell quoting to improve security of how Docker commands are executed
 - Prints the full "docker build …" command run for a "dup build"

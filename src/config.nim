@@ -52,10 +52,14 @@ proc data*(config: ProjectConfig): string =
   ## Helper proc for getting data container name
   result = config.name & "-data"
 
-proc argsToStr*[T](args: T): string {.raises: [].} =
+proc argsToStr*(args: Args): string {.raises: [].} =
   result = ""
-  var marker = " -e "
-  if name(T) == "BuildArgs":
-    marker = " --build-arg "
+  let marker = " -e "
+  for arg in args:
+    result &= marker & quoteShellPosix(arg.name) & "=" & quoteShellPosix(arg.value)
+
+proc buildArgsToStr*(args: BuildArgs): string {.raises: [].} =
+  result = ""
+  var marker = " --build-arg "
   for arg in args:
     result &= marker & quoteShellPosix(arg.name) & "=" & quoteShellPosix(arg.value)

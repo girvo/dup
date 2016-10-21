@@ -152,7 +152,7 @@ proc down*(conf: ProjectConfig) {.raises: [].} =
 ## Builds the image, passing build arguments in
 proc build*(conf: ProjectConfig, noCache: bool = false) =
   var hasEnv = false
-  var buildArgs = argsToStr[BuildArgs](conf.buildArgs)
+  var buildArgs = buildArgsToStr(conf.buildArgs)
   for arg in conf.buildArgs:
     if arg.name == "env": hasEnv = true
   if not hasEnv:

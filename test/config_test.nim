@@ -14,10 +14,10 @@ suite "config.argsToStr":
 
   test "works with BuildArgs":
     let args: BuildArgs = @[newArg("example", "value")]
-    let result = argsToStr(args)
+    let result = buildArgsToStr(args)
     check(result == " --build-arg example=value")
 
   test "works with Args":
     let args: Args = @[newArg("example2", "value2")]
     let result = argsToStr(args)
-    check(result == " --build-arg example2=value2")
+    check(result == " -e example2=value2")

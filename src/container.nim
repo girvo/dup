@@ -129,15 +129,19 @@ proc startWebCmd*(conf: ProjectConfig, hasDb: bool = true): string {.raises: [],
                   noSideEffect.} =
   var
     hostname = conf.name & ".docker"
+    vhost = ""
   for arg in conf.envVars:
     if arg.name == "VIRTUAL_HOST":
-      hostname = arg.value
+      vhost = arg.value
   let
     link = if hasDB: "--link " & conf.db & ":db " else: ""
     port = if conf.port == "": "" else: "-p " & conf.port
   var folder = "-v $PWD/" & conf.volume
   if conf.volume == "":
     folder = "-v $PWD/code:/var/www"
+  var vhostEnv = ""
+  if vhost == "":
+    vhostEnv = "-e VIRTUAL_HOST=" & quoteShellPosix(vhost)
 
   result = join([
     "docker run",
@@ -148,7 +152,7 @@ proc startWebCmd*(conf: ProjectConfig, hasDb: bool = true): string {.raises: [],
     folder,
     link,
     "-e TERM=xterm-256color",
-    "-e VIRTUAL_HOST=" & quoteShellPosix(hostname),
+    vhostEnv,
     quoteShellPosix(conf.name & ":latest")
   ], " ")
 

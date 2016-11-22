@@ -1,5 +1,9 @@
 # Changelog
 
+## v1.0.3
+
+- Removes the bindings between `VIRTUAL_HOST` and `hostname` (`-h` in the `docker run`) for the web container. This fixes the incorrect hostname format when a composite `VIRTUAL_HOST` is passed in via `env`
+
 ## v1.0.2
 
 - Fixes a bug in v1.0.1 which broke "dup up"

@@ -1,5 +1,9 @@
 # Changelog
 
+## v1.0.4
+
+- Fixes incorrect `VIRTUAL_HOST` env-var for the web-container when using the default
+
 ## v1.0.3
 
 - Removes the bindings between `VIRTUAL_HOST` and `hostname` (`-h` in the `docker run`) for the web container. This fixes the incorrect hostname format when a composite `VIRTUAL_HOST` is passed in via `env`

@@ -141,7 +141,7 @@ proc startWebCmd*(conf: ProjectConfig, hasDb: bool = true): string {.raises: [],
     folder = "-v $PWD/code:/var/www"
   var vhostEnv = ""
   if vhost == "":
-    vhostEnv = "-e VIRTUAL_HOST=" & quoteShellPosix(vhost)
+    vhostEnv = "-e VIRTUAL_HOST=" & quoteShellPosix(hostname)
 
   result = join([
     "docker run",

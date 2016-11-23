@@ -13,7 +13,7 @@ from database import newDBConfig
 from container import checkDockerfile, checkAndParseDupFile
 
 ## Define our version constant for re-use
-const version = "dup 1.0.3"
+const version = "dup 1.0.4"
 
 ## Define our docopt parsing schema
 let doc = """

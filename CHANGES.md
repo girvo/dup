@@ -1,5 +1,9 @@
 # Changelog
 
+## v1.0.5
+
+- Allows using Dup with Docker 1.13.x.
+
 ## v1.0.4
 
 - Fixes incorrect `VIRTUAL_HOST` env-var for the web-container when using the default

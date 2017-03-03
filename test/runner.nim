@@ -5,3 +5,4 @@
 
 import ./docker_test
 import ./config_test
+import ./util_test

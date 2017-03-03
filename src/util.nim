@@ -103,3 +103,11 @@ proc writeStatus*(name: string, status: bool) =
     stdout.write("not running")
   stdout.resetAttributes()
   stdout.write("\n")
+
+proc isVersionTooOld*(dv: VersionNumber): bool =
+  result = false
+  if dv.major < 1:
+    result = true
+  elif dv.major == 1:
+    if dv.minor < 12:
+      result = true

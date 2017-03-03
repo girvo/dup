@@ -46,7 +46,7 @@ proc checkDockerfile*() {.raises: [].} =
     if not existsFile(getCurrentDir() / "Dockerfile"):
       writeError("Missing \"Dockerfile\" in current directory")
       quit(254)
-  except OSError:
+  except:
     writeError(getCurrentExceptionMsg(), true)
     quit(1)
 

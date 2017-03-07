@@ -34,4 +34,10 @@ test: ./test/runner
 ./test/runner: $(wildcard ./**/*.nim)
 	nim c -x:on $(TEST_DIR)/runner
 
-.PHONY: all clean run release linux test
+$(BIN_DIR)/ds: ./docker_socket/docker_socket.nim
+	nim c $(NIM_OPTS) --out:$@ $<
+
+ds: $(BIN_DIR)/ds
+	@$<
+
+.PHONY: all clean run release linux test ds

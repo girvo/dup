@@ -92,43 +92,41 @@ method readHeaders(self: var HttpParser) {.base.} =
     elif header.keyEqualTo("transfer-encoding") and header.value == "chunked":
       self.bodyState = BodyState.Chunked
 
-###
-# Socket handling for Docker
-##
-const
-  dockerSocket = "/var/run/docker.sock"
-let
-  sock: Socket = newSocket(AF_UNIX, SOCK_STREAM, IPPROTO_IP)
-var
-  parser: HttpParser = newHttpParser()
-  linebuf: TaintedString = ""
-  bodybuf: TaintedString = ""
+const dockerSocket = "/var/run/docker.sock"
+proc request*(uri: string, version: string = "v1.26"): Response =
+  let
+    sock: Socket = newSocket(AF_UNIX, SOCK_STREAM, IPPROTO_IP)
+  var
+    parser: HttpParser = newHttpParser()
+    linebuf: TaintedString = ""
+    bodybuf: TaintedString = ""
+  sock.connectUnix(dockerSocket)
+  sock.send("GET /" & version & uri & " HTTP/1.1\nHost: localhost\n\n")
 
-## TODO: This should be ripped out of the parser, parser should work solely on strings
-echo "Connecting to socket..."
-sock.connectUnix(dockerSocket)
-sock.send("GET /v1.26/containers/json HTTP/1.1\nHost: localhost\n\n")
+  # Read raw headers into a string
+  while parser.currentState == ParserState.Headers:
+    sock.readLine(linebuf)
+    if linebuf != "\r\n":
+      parser.addRawHeader(linebuf)
+    else:
+      parser.currentState = ParserState.Body
 
-# Read raw headers into a string
-while parser.currentState == ParserState.Headers:
-  sock.readLine(linebuf)
-  if linebuf != "\r\n":
-    parser.addRawHeader(linebuf)
+  parser.parseHeaders()
+  parser.readHeaders()
+
+  # Read body
+  if parser.bodyState == BodyState.ContentLength:
+    bodybuf.setLen(parser.curResponse.bodyLength)
+    discard sock.recv(bodybuf, parser.curResponse.bodyLength)
+    parser.curResponse.body = bodybuf
+  elif parser.bodyState == BodyState.Chunked:
+    echo "Transfer encoding, chunked!!!"
   else:
-    parser.currentState = ParserState.Body
+    echo "Unknown state for HttpParser.bodyState"
+  sock.close()
+  result = parser.curResponse
 
-parser.parseHeaders()
-parser.readHeaders()
-
-# Read body
-if parser.bodyState == BodyState.ContentLength:
-  bodybuf.setLen(parser.curResponse.bodyLength)
-  discard sock.recv(bodybuf, parser.curResponse.bodyLength)
-  parser.curResponse.body = bodybuf
-  echo parser.curResponse
-elif parser.bodyState == BodyState.Chunked:
-  echo "Transfer encoding, chunked!!!"
-else:
-  echo "Unknown state for HttpParser.bodyState"
-
-# for line in lines: echo "'", line, "'"
+## Testing data
+var req = request("/containers/json")
+echo req.statusCode
+echo req.body

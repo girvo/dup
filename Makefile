@@ -40,4 +40,11 @@ $(BIN_DIR)/ds: ./docker_socket/docker_socket.nim
 ds: $(BIN_DIR)/ds
 	@$<
 
-.PHONY: all clean run release linux test ds
+$(BIN_DIR)/tar: ./docker_socket/tar.nim
+	nim c $(NIM_OPTS) --out:$@ $<
+
+tar: $(BIN_DIR)/tar
+	@$<
+
+
+.PHONY: all clean run release linux test ds tar

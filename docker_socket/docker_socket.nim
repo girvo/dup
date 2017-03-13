@@ -1,7 +1,8 @@
 ## A Docker API implementation via Unix sockets
 
-import net, pegs, unicode, sequtils
+import net, pegs, unicode, sequtils, json
 from strutils import strip, parseInt, join, splitLines
+from parseutils import parseHex
 
 ## PEGs for parsing headers and status lines
 let
@@ -83,6 +84,12 @@ method parseHeaders(self: var HttpParser) {.base.} =
       self.curResponse.statusCode = parsed.code
       self.curResponse.statusLine = line
 
+template doWhile(a: untyped, b: typed): typed =
+  ## Do...while construct as a template
+  b
+  while a:
+    b
+
 method readHeaders(self: var HttpParser) {.base.} =
   ## Read the headers to control teh state machine
   for i, header in self.curResponse.headers:
@@ -120,13 +127,25 @@ proc request*(uri: string, version: string = "v1.26"): Response =
     discard sock.recv(bodybuf, parser.curResponse.bodyLength)
     parser.curResponse.body = bodybuf
   elif parser.bodyState == BodyState.Chunked:
-    echo "Transfer encoding, chunked!!!"
+    var
+      chunkLen = 0
+      cont = true
+    while cont:
+      sock.readLine(linebuf)
+      if linebuf != "\r\n":
+        discard parseHex("0x" & linebuf, chunkLen)
+        if chunkLen != 0:
+          bodybuf.setLen(chunkLen)
+          discard sock.recv(bodybuf, chunkLen)
+          parser.curResponse.body &= bodybuf
+        else: cont = false
+      else: cont = false
   else:
     echo "Unknown state for HttpParser.bodyState"
   sock.close()
   result = parser.curResponse
 
 ## Testing data
-var req = request("/containers/json")
-echo req.statusCode
+var req = request("/images/json?all=true")
+
 echo req.body

@@ -1,8 +1,9 @@
-NIM_OPTS=--parallelBuild:1 --define:nimOldSplit
+# Add: --define:jsonob_no_exhaustive to turn off warnings about unused properties from jsonob
+NIM_OPTS=--parallelBuild:1 --define:nimOldSplit --debugger:native
 RELEASE_OPTS=--opt:size
 APP_NAME=dup
 BIN_DIR=build
-SRC_DIR=src
+SRC_DIR=dup
 TEST_DIR=test
 
 all: clean $(BIN_DIR)/$(APP_NAME)
@@ -46,5 +47,10 @@ $(BIN_DIR)/tar: ./docker_socket/tar.nim
 tar: $(BIN_DIR)/tar
 	@$<
 
+$(BIN_DIR)/ad: ./docker_socket/async_docker.nim
+	nim c $(NIM_OPTS) --out:$@ $<
 
-.PHONY: all clean run release linux test ds tar
+ad: $(BIN_DIR)/ad
+	@$<
+
+.PHONY: all clean run release linux test ds tar ad

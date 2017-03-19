@@ -1,6 +1,6 @@
 ## A Docker API implementation via Unix sockets
 
-import net, pegs, unicode, sequtils, json
+import net, pegs, unicode, sequtils, json, jsonob, options, tables, typeinfo
 from strutils import strip, parseInt, join, splitLines
 from parseutils import parseHex
 
@@ -15,36 +15,36 @@ let
 
 type
   ## HTTP Response types
-  Header = tuple[key, value: string]
-  Response = object of RootObj
+  Header* = tuple[key, value: string]
+  Response* = object of RootObj
     statusLine*: string
     statusCode*: int
-    headers: seq[Header]
-    body: string
+    headers*: seq[Header]
+    body*: string
     bodyLength*: int
   ## Parser types
-  ContentState {.pure.} = enum
+  ContentState* {.pure.} = enum
     Text, Gzip
-  BodyState {.pure.} = enum
+  BodyState* {.pure.} = enum
     Unknown, ContentLength, Chunked
   ParserState {.pure.} = enum
     Headers, Body
-  HttpParser = object of RootObj
-    currentState: ParserState
-    bodyState: BodyState
-    contentState: ContentState
-    rawHeaders: TaintedString
-    curResponse: Response
+  HttpParser* = object of RootObj
+    currentState*: ParserState
+    bodyState*: BodyState
+    contentState*: ContentState
+    rawHeaders*: TaintedString
+    curResponse*: Response
 
 ## Constructors
-proc newEmptyResponse(): Response =
+proc newEmptyResponse*(): Response =
   result.statusLine = ""
   result.statusCode = -1
   result.headers = @[]
   result.body = ""
   result.bodyLength = -1
 
-proc newHttpParser(): HttpParser =
+proc newHttpParser*(): HttpParser =
   result.bodyState = BodyState.Unknown
   result.currentState = ParserState.Headers
   result.contentState = ContentState.Text
@@ -52,28 +52,28 @@ proc newHttpParser(): HttpParser =
   result.curResponse = newEmptyResponse()
 
 ## Procs and Methods
-proc keyEqualTo(header: Header, cmp: string): bool =
+proc keyEqualTo*(header: Header, cmp: string): bool =
   header.key.toLower == cmp.toLower
 
-proc parseStatus(raw: string): tuple[code: int, msg: string] =
+proc parseStatus*(raw: string): tuple[code: int, msg: string] =
   if raw =~ peg"{\d\d\d}\ {.*}":
     result.code = matches[0].parseInt()
     result.msg = matches[1]
   else:
     raise newException(OSError, "Invalid status code?")
 
-method addHeader(self: var Response, header: Header) {.base.} =
+method addHeader*(self: var Response, header: Header) {.base.} =
   # Adds a header tuple to the internal headers seq
   self.headers.add(header)
 
-method setBody(self: var Response, body: string) {.base.} =
+method setBody*(self: var Response, body: string) {.base.} =
   # Sets the body string value (TODO: It's not always a string!)
   self.body = body
 
-method addRawHeader(self: var HttpParser, line: TaintedString) {.base.} =
+method addRawHeader*(self: var HttpParser, line: TaintedString) {.base.} =
   self.rawHeaders.add(line & "\n")
 
-method parseHeaders(self: var HttpParser) {.base.} =
+method parseHeaders*(self: var HttpParser) {.base.} =
   ## Parses single header lines into proper Header tuples
   for line in splitLines(self.rawHeaders):
     if line =~ httpHeaderPeg:
@@ -84,13 +84,7 @@ method parseHeaders(self: var HttpParser) {.base.} =
       self.curResponse.statusCode = parsed.code
       self.curResponse.statusLine = line
 
-template doWhile(a: untyped, b: typed): typed =
-  ## Do...while construct as a template
-  b
-  while a:
-    b
-
-method readHeaders(self: var HttpParser) {.base.} =
+method readHeaders*(self: var HttpParser) {.base.} =
   ## Read the headers to control teh state machine
   for i, header in self.curResponse.headers:
     if header.keyEqualTo("content-length"):
@@ -99,16 +93,17 @@ method readHeaders(self: var HttpParser) {.base.} =
     elif header.keyEqualTo("transfer-encoding") and header.value == "chunked":
       self.bodyState = BodyState.Chunked
 
-const dockerSocket = "/var/run/docker.sock"
-proc request*(uri: string, version: string = "v1.26"): Response =
+const dockerSocket* = "/var/run/docker.sock"
+proc request*(uri: string, mthd: string = "GET", version: string = "v1.26"): Response =
   let
     sock: Socket = newSocket(AF_UNIX, SOCK_STREAM, IPPROTO_IP)
   var
     parser: HttpParser = newHttpParser()
-    linebuf: TaintedString = ""
-    bodybuf: TaintedString = ""
+    linebuf: string = ""
+    bodybuf: string = ""
   sock.connectUnix(dockerSocket)
-  sock.send("GET /" & version & uri & " HTTP/1.1\nHost: localhost\n\n")
+  defer: sock.close()
+  sock.send(mthd & " /" & version & uri & " HTTP/1.1\nHost: http\n\n")
 
   # Read raw headers into a string
   while parser.currentState == ParserState.Headers:
@@ -116,7 +111,7 @@ proc request*(uri: string, version: string = "v1.26"): Response =
     if linebuf != "\r\n":
       parser.addRawHeader(linebuf)
     else:
-      parser.currentState = ParserState.Body
+      parser.currentState = ParserState.Body`
 
   parser.parseHeaders()
   parser.readHeaders()
@@ -132,20 +127,105 @@ proc request*(uri: string, version: string = "v1.26"): Response =
       cont = true
     while cont:
       sock.readLine(linebuf)
+      echo linebuf
       if linebuf != "\r\n":
         discard parseHex("0x" & linebuf, chunkLen)
+        echo chunkLen
         if chunkLen != 0:
-          bodybuf.setLen(chunkLen)
           discard sock.recv(bodybuf, chunkLen)
           parser.curResponse.body &= bodybuf
         else: cont = false
       else: cont = false
   else:
     echo "Unknown state for HttpParser.bodyState"
-  sock.close()
   result = parser.curResponse
 
-## Testing data
-var req = request("/images/json?all=true")
+type
+  Image* = object of RootObj
+    Id*: string
+    Created*: int
+    Containers*: int
+    ParentId*: string
+    RepoDigests*: Option[seq[string]]
+    RepoTags*: Option[seq[string]]
+    SharedSize*: int
+    Size*: int
+    VirtualSize*: int
+    Labels*: Option[Table[string, string]]
+  Images* = seq[Image]
 
-echo req.body
+# Porting this util function
+proc not_nil_and_is(root: JsonNode, kind: JsonNodeKind) =
+  if root.is_nil:
+    assert(false, ("got nil, but expect $#" & $kind))
+  if root.kind != kind:
+    assert(false, "got " & $root.kind & ", but expect " & $kind)
+
+# Writing our custom handlers for Table-style types
+proc to[A, B](root: JsonNode, x: var Table[A, B]) =
+  root.not_nil_and_is(JObject) # Check its the right type
+  x = initTable[A, B]() # Initalise the table
+  for k,v in root.getFields():
+    x.add(k, v.str)
+
+proc getImages*(all: bool = false): Images =
+  let
+    uriFragment = if all: "?all=true" else: ""
+    response = request("/images/json" & uriFragment)
+  result = response.body.parse_json().to(Images)
+
+type
+  Containers* = seq[Container]
+  Container* = object of RootObj
+    Id*: string
+    Names*: seq[string]
+    Image*: string
+    ImageID*: string
+    Command*: string
+    Created*: int
+    Ports*: seq[string]
+    Labels*: Option[Table[string, string]]
+    State*: string
+    Status*: string
+    HostConfig*: HostConfig
+    # Mounts*: seq[string]
+  HostConfig* = object
+    NetworkMode*: string
+
+proc getContainers*(all: bool = false): Containers =
+  let
+    uriFragment = if all: "?all=true" else: ""
+    response = request("/containers/json" & uriFragment)
+  result = response.body.parse_json().to(Containers)
+
+type
+  ## Version handling
+  Version* = object of RootObj
+    Version*: string
+    Os*: string
+    KernelVersion*: string
+    GoVersion*: string
+    GitCommit*: string
+    Arch*: string
+    ApiVersion*: string
+    MinAPIVersion*: string
+    BuildTime*: string
+    Experimental*: bool
+
+proc getVersion*(): Version =
+  let response = request("/version")
+  result = response.body.parse_json().to(Version)
+
+proc getLogs*() =
+  let
+    # query = "?stdout=true&stderr=true"
+    response = request("/containers/sfts-web/logs?stdout=true&stderr=false&follow=false")
+  echo response.headers
+  echo response.statusLine
+  echo response.body
+  return
+  # echo response.body.parse_json().pretty()
+## Testing data
+when isMainModule:
+  getLogs()
+  # echo $result

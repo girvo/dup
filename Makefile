@@ -1,5 +1,5 @@
 # Add: --define:jsonob_no_exhaustive to turn off warnings about unused properties from jsonob
-NIM_OPTS=--parallelBuild:1 --define:nimOldSplit --debugger:native
+NIM_OPTS=--parallelBuild:1 --define:nimOldSplit --debuginfo --linedir:on
 RELEASE_OPTS=--opt:size
 APP_NAME=dup
 BIN_DIR=build

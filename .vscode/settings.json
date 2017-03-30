@@ -1,0 +1,6 @@
+{
+    "nim.project": [
+        "dup/dup.nim",
+        "docker_socket/docker_socket.nim"
+    ]
+}

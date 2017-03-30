@@ -1,8 +1,9 @@
 ## A Docker API implementation via Unix sockets
 
-import net, pegs, unicode, sequtils, json, jsonob, options, tables, typeinfo
+import net, pegs, unicode, sequtils, json, jsonob, options, tables
 from strutils import strip, parseInt, join, splitLines
 from parseutils import parseHex
+from curl import nil
 
 ## PEGs for parsing headers and status lines
 let
@@ -111,7 +112,7 @@ proc request*(uri: string, mthd: string = "GET", version: string = "v1.26"): Res
     if linebuf != "\r\n":
       parser.addRawHeader(linebuf)
     else:
-      parser.currentState = ParserState.Body`
+      parser.currentState = ParserState.Body
 
   parser.parseHeaders()
   parser.readHeaders()
@@ -225,7 +226,40 @@ proc getLogs*() =
   echo response.body
   return
   # echo response.body.parse_json().pretty()
-## Testing data
+
+
+###
+# cURL testing...
+##
+type
+  NulString = string
+  Buffer = tuple
+    data: NulString
+    size: int
+
+proc echo(s: NulString) = write(stdout, s)
+
+var buffer: Buffer = (data: newString(0), size: 0)
+
+proc writeMemCbproc(buf: cstring, size: int, nitems: int, outstream: pointer): int =
+  let realsize = size * nitems
+  buffer.data.setLen(buffer.size + realsize)
+  for i in 0..realsize:
+    buffer.data[buffer.size + i] = buf[i]
+  buffer.size = buffer.size + realsize
+  return realsize
+
 when isMainModule:
-  getLogs()
-  # echo $result
+  # Initialise cURL (ignoring errors for now)
+  discard curl.global_init(curl.GLOBAL_ALL)
+  var handle: curl.PCurl = curl.easy_init()
+  defer: curl.easy_cleanup(handle)
+  discard curl.easy_setopt(handle, curl.Option.OPT_WRITEFUNCTION, writeMemCbproc)
+  discard curl.easy_setopt(handle, curl.Option.OPT_UNIX_SOCKET_PATH, "/var/run/docker.sock")
+  discard curl.easy_setopt(handle, curl.Option.OPT_URL, "http:/containers/sfts-web/logs?stdout=true&stderr=true&timestamps=false&follow=false")
+  var result = curl.easy_perform(handle)
+  if result == curl.E_OK:
+    echo buffer.data
+  else:
+    echo "Incorrect result!"
+

@@ -3,8 +3,9 @@
     "configurations": [
         {
             "name": "Debug",
-            "type": "gdb",
+            "type": "lldb-mi",
             "request": "launch",
+            "lldbmipath": "lldb",
             "target": "./build/ds",
             "cwd": "${workspaceRoot}"
         }

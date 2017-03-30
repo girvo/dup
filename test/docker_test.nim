@@ -3,10 +3,10 @@
 import unittest
 import options
 import typetraits
-import ../src/private/types
+import ../dup/private/types
 
 # Unit under test
-import ../src/docker
+import ../dup/docker
 
 suite "docker.parseVersionStr":
   setup: discard

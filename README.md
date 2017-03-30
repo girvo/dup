@@ -20,6 +20,14 @@ Usage:
 
 ## Installation
 
+### Prerequisites
+
+- `libcurl` v7.40 or above
+  - `brew install curl` as of 2017-03-20 will install a high enough version on macOS
+  - Linuxes should find the right version in their respective package managers
+
+### Instructions
+
 - Download the latest binary for your platform from the [releases tab](https://github.com/girvo/dup/releases)
 - Unzip the archive
 - Move the `dup` binary on to your `PATH` (usually `/usr/local/bin`)

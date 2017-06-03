@@ -63,18 +63,18 @@ proc parseStatus*(raw: string): tuple[code: int, msg: string] =
   else:
     raise newException(OSError, "Invalid status code?")
 
-method addHeader*(self: var Response, header: Header) {.base.} =
+proc addHeader*(self: var Response, header: Header) =
   # Adds a header tuple to the internal headers seq
   self.headers.add(header)
 
-method setBody*(self: var Response, body: string) {.base.} =
+proc setBody*(self: var Response, body: string) =
   # Sets the body string value (TODO: It's not always a string!)
   self.body = body
 
-method addRawHeader*(self: var HttpParser, line: TaintedString) {.base.} =
+proc addRawHeader*(self: var HttpParser, line: TaintedString) =
   self.rawHeaders.add(line & "\n")
 
-method parseHeaders*(self: var HttpParser) {.base.} =
+proc parseHeaders*(self: var HttpParser) =
   ## Parses single header lines into proper Header tuples
   for line in splitLines(self.rawHeaders):
     if line =~ httpHeaderPeg:
@@ -85,7 +85,7 @@ method parseHeaders*(self: var HttpParser) {.base.} =
       self.curResponse.statusCode = parsed.code
       self.curResponse.statusLine = line
 
-method readHeaders*(self: var HttpParser) {.base.} =
+proc readHeaders*(self: var HttpParser) =
   ## Read the headers to control teh state machine
   for i, header in self.curResponse.headers:
     if header.keyEqualTo("content-length"):
@@ -103,13 +103,13 @@ proc request*(uri: string, mthd: string = "GET", version: string = "v1.26"): Res
     linebuf: string = ""
     bodybuf: string = ""
   sock.connectUnix(dockerSocket)
-  defer: sock.close()
+  # defer: sock.close()
   sock.send(mthd & " /" & version & uri & " HTTP/1.1\nHost: http\n\n")
 
   # Read raw headers into a string
   while parser.currentState == ParserState.Headers:
-    sock.readLine(linebuf)
-    if linebuf != "\r\n":
+    linebuf = sock.recvLine()
+    if linebuf != "\r\L":
       parser.addRawHeader(linebuf)
     else:
       parser.currentState = ParserState.Body
@@ -124,19 +124,26 @@ proc request*(uri: string, mthd: string = "GET", version: string = "v1.26"): Res
     parser.curResponse.body = bodybuf
   elif parser.bodyState == BodyState.Chunked:
     var
-      chunkLen = 0
       cont = true
+      chunkCount = 1
     while cont:
-      sock.readLine(linebuf)
-      echo linebuf
-      if linebuf != "\r\n":
-        discard parseHex("0x" & linebuf, chunkLen)
-        echo chunkLen
+      var chunkLen = 0
+      write(stdout, "Chunk: " & $chunkCount & "\n")
+      chunkCount += 1
+      linebuf = sock.recvLine()
+      write(stdout, "Raw: " & $linebuf & "\n")
+      if parseHex("0x" & linebuf, chunkLen) != 0:
         if chunkLen != 0:
-          discard sock.recv(bodybuf, chunkLen)
+          write(stdout, $linebuf & "\n")
+          write(stdout, $chunkLen & "\n\n")
+          bodybuf.setLen(chunkLen)
+          if sock.recv(bodybuf, chunkLen) == 0:
+            cont = false
+            raise newException(IOError, "Hissy fit!")
           parser.curResponse.body &= bodybuf
         else: cont = false
-      else: cont = false
+      else:
+        cont = false
   else:
     echo "Unknown state for HttpParser.bodyState"
   result = parser.curResponse
@@ -220,10 +227,8 @@ proc getVersion*(): Version =
 proc getLogs*() =
   let
     # query = "?stdout=true&stderr=true"
-    response = request("/containers/sfts-web/logs?stdout=true&stderr=false&follow=false")
-  echo response.headers
-  echo response.statusLine
-  echo response.body
+    response = request("/containers/rds-web/logs?stdout=true&stderr=true&timestamps=true&follow=false")
+  write(stdout, $response.body)
   return
   # echo response.body.parse_json().pretty()
 
@@ -251,15 +256,4 @@ proc writeMemCbproc(buf: cstring, size: int, nitems: int, outstream: pointer): i
 
 when isMainModule:
   # Initialise cURL (ignoring errors for now)
-  discard curl.global_init(curl.GLOBAL_ALL)
-  var handle: curl.PCurl = curl.easy_init()
-  defer: curl.easy_cleanup(handle)
-  discard curl.easy_setopt(handle, curl.Option.OPT_WRITEFUNCTION, writeMemCbproc)
-  discard curl.easy_setopt(handle, curl.Option.OPT_UNIX_SOCKET_PATH, "/var/run/docker.sock")
-  discard curl.easy_setopt(handle, curl.Option.OPT_URL, "http:/containers/sfts-web/logs?stdout=true&stderr=true&timestamps=false&follow=false")
-  var result = curl.easy_perform(handle)
-  if result == curl.E_OK:
-    echo buffer.data
-  else:
-    echo "Incorrect result!"
-
+  getLogs()

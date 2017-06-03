@@ -31,6 +31,10 @@
         {
             "taskName": "test",
             "isTestCommand": true
+        },
+        {
+            "taskName": "ds",
+            "suppressTaskName": false
         }
     ]
 }

@@ -2,12 +2,12 @@
     "version": "0.2.0",
     "configurations": [
         {
-            "name": "Debug",
-            "type": "lldb-mi",
+            "name": "Debug docker_socket",
+            "type": "gdb",
             "request": "launch",
-            "lldbmipath": "lldb",
             "target": "./build/ds",
-            "cwd": "${workspaceRoot}"
+            "cwd": "${workspaceRoot}",
+            "preLaunchTask": "ds"
         }
     ]
 }

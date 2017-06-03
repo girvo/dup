@@ -1,9 +1,6 @@
 ## TAR file implementation in pure Nim
 
-import
-  os,
-  pegs,
-  streams
+import os, pegs, streams, strutils
 
 type
   ## Different types, regular Tar or Star
@@ -56,7 +53,56 @@ type
     stream*: FileStream
     size*: int64
 
-proc newFileHandle*(fname: string, s: FileStream, size: int64): FileHandle =
+proc newFileHandle(fname: string, s: FileStream, size: int64): FileHandle =
+  ## FileHandle constructor
   result = FileHandle(filename: fname, stream: s, size: size)
 
+proc createHandleFromFilename*(fname: string): FileHandle =
+  ## Public proc to create handle for a given filename
+  let stream = newFileStream(fname, fmRead)
+  let size = getFileSize(fname)
+  result = newFileHandle(fname, stream, size)
+
 proc allocateBuffer*(files: seq[FileHandle]) = discard
+
+proc paddingSize*(file: FileHandle): int64 =
+  ## Calculates padding size needed for a given file handle
+  result = file.size mod 512
+
+proc listFilesForPath*(path: string): any =
+  return "Hello"
+
+when isMainModule:
+  echo "*".repeat(80)
+  echo "TAR whole-module integration tests..."
+  echo "*".repeat(80) & "\n"
+
+  ## Constants
+  const folderName = "./.tmp"
+  const fileName = folderName & "/test.txt"
+  const fileData = "Hello, World!\n".repeat(4)
+
+  ## Setup
+  echo "Creating directory for tests..."
+  createDir(folderName)
+  echo "Creating file..."
+  writeFile(fileName, fileData)
+
+  ## TAR creation...
+  # tbd
+
+  ## Removal and cleanup
+  echo "Removing test directory..."
+  removeDir(folderName)
+  defer:
+    echo "Cleaning up..."
+    removeDir(folderName)
+    echo "Complete!"
+    echo "*".repeat(80)
+
+  ## TAR extraction...
+  # tbd
+  ## Read file back
+  let f = readFile(fileName)
+  assert(f == fileData,
+    "Our extracted file should have the same data")

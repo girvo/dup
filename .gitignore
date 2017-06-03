@@ -1,6 +1,7 @@
 # Nim build cache
 nimcache
 nimsuggest.log
+.tmp
 .vscode/*
 !.vscode/settings.json
 !.vscode/tasks.json

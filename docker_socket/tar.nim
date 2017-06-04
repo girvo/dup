@@ -1,6 +1,6 @@
 ## TAR file implementation in pure Nim
 
-import os, pegs, streams, strutils
+import os, osproc, pegs, streams, strutils
 
 type
   ## Different types, regular Tar or Star
@@ -81,6 +81,7 @@ when isMainModule:
   const folderName = "./.tmp"
   const fileName = folderName & "/test.txt"
   const fileData = "Hello, World!\n".repeat(4)
+  const tarFilename = "./test.tar"
 
   ## Setup
   echo "Creating directory for tests..."
@@ -89,19 +90,23 @@ when isMainModule:
   writeFile(fileName, fileData)
 
   ## TAR creation...
-  # tbd
+  echo "Creating TAR file from test directory..."
 
   ## Removal and cleanup
   echo "Removing test directory..."
   removeDir(folderName)
   defer:
     echo "Cleaning up..."
+    removeFile(tarFilename)
     removeDir(folderName)
     echo "Complete!"
     echo "*".repeat(80)
 
-  ## TAR extraction...
-  # tbd
+  ## TAR extraction (via the "tar" command, we're not extracting in this lib)
+  echo "Extracting TAR file into current directory..."
+  assert(execCmd("tar xvf ./test.tar") == 0,
+    "Exit code for TAR should be zero")
+
   ## Read file back
   let f = readFile(fileName)
   assert(f == fileData,

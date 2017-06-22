@@ -1,5 +1,9 @@
 # Changelog
 
+## v1.0.7
+
+- Replaced `tutum/mysql` with `mysql:5.6`.
+
 ## v1.0.4
 
 - Fixes incorrect `VIRTUAL_HOST` env-var for the web-container when using the default

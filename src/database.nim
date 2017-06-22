@@ -50,10 +50,10 @@ proc getVolumePath*(conf: DatabaseConfig): string {.raises: [].} =
 proc getImageName*(conf: DatabaseConfig): string {.raises: [].} =
   case conf.kind
   of MySQL:
-    result = "mysql:5.6"
+    result = if conf.image == "": "mysql:5.6" else: conf.image
   of PostgreSQL:
     result = if conf.image == "": "postgres:9.5" else: conf.image
   of MongoDB:
-    result = "mongo:3.3"
+    result = if conf.image == "": "mongo:3.3" else: conf.image
   of None:
     result = ""

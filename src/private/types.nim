@@ -13,11 +13,11 @@ type
     case kind: DatabaseType
     of PostgreSQL:
       username*: string
-      image*: string
     else: discard
     # Shared properties across the ADT -- empty for None et al.
     name*: string
     password*: string
+    image*: string
 
 type
   DBError* = object of IOError ## Top-level database error
@@ -31,7 +31,7 @@ proc newDBNone(): DatabaseConfig {.raises: [].} =
   ## Creates a new DatabaseConfig of the "None" type
   result = DatabaseConfig(kind: None)
 
-proc newDBMySQL(pass: string, name: string): DatabaseConfig
+proc newDBMySQL(pass, name, image: string): DatabaseConfig
                 {.raises: [DBConfigError].} =
   ## Creates a new DatabaseConfig of the "MySQL" type
   if pass.len == 0: raise newException(DBConfigError, "'pass' must be set and non-empty")
@@ -39,9 +39,10 @@ proc newDBMySQL(pass: string, name: string): DatabaseConfig
   result = DatabaseConfig(
     kind: MySQL,
     password: pass,
-    name: name)
+    name: name,
+    image: image)
 
-proc newDBPostgreSQL(pass: string, name: string, user: string, image: string): DatabaseConfig
+proc newDBPostgreSQL(pass, name, user, image: string): DatabaseConfig
                      {.raises: [DBConfigError].} =
   ## Creates a new DatabaseConfig of the "PostgreSQL" type
   if pass.len == 0: raise newException(DBConfigError, "'pass' must be set and non-empty")
@@ -54,22 +55,23 @@ proc newDBPostgreSQL(pass: string, name: string, user: string, image: string): D
     username: user,
     image: image)
 
-proc newDBMongoDB*(): DatabaseConfig {.raises: [].} =
+proc newDBMongoDB(image: string): DatabaseConfig {.raises: [].} =
   result = DatabaseConfig(
     kind: MongoDB,
     password: "",
-    name: "")
+    name: "",
+    image: image)
 
 proc newDBConfig*(dbType: DatabaseType, pass = "", name = "",
                   user = "", image = ""): DatabaseConfig {.raises: [DBConfigError].} =
   ## Creates a new database configuration based on a given type param
   case dbType
   of MySQL:
-    result = newDBMySQL(pass, name)
+    result = newDBMySQL(pass, name, image)
   of PostgreSQL:
     result = newDBPostgreSQL(pass, name, user, image)
   of MongoDB:
-    result = newDBMongoDB()
+    result = newDBMongoDB(image)
   of None:
     result = newDBNone()
   else:

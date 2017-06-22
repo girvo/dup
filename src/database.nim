@@ -19,16 +19,18 @@ proc newDBConfig*(config: JsonNode): DatabaseConfig {.raises: [DBConfigError].} 
   case dbType.getStr().toLowerAscii()
   of "mysql":
     result = MySQL.newDBConfig(
-      config.getOrDefault("pass").getStr(),
-      config.getOrDefault("name").getStr())
+      pass = config.getOrDefault("pass").getStr(),
+      name = config.getOrDefault("name").getStr(),
+      image = config.getOrDefault("image").getStr())
   of "postgres":
     result = PostgreSQL.newDBConfig(
-      config.getOrDefault("pass").getStr(),
-      config.getOrDefault("name").getStr(),
-      config.getOrDefault("user").getStr(),
-      config.getOrDefault("image").getStr())
+      pass = config.getOrDefault("pass").getStr(),
+      name = config.getOrDefault("name").getStr(),
+      user = config.getOrDefault("user").getStr(),
+      image = config.getOrDefault("image").getStr())
   of "mongodb":
-    result = MongoDB.newDBConfig()
+    result = MongoDB.newDBConfig(
+      image = config.getOrDefault("image").getStr())
   of "none":
     result = None.newDBConfig()
   else:

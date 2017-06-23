@@ -87,9 +87,22 @@ Your code is mounted as a volume into the `-web` container from the `code/` dire
 
 ## Databases
 
-Currently, `dup` handles MySQL, using the [tutum/mysql:latest](https://github.com/tutumcloud/mysql) Docker image. PostgreSQL is now supported, via the official `postgres` Docker image. Persistence of your database is handled by leveraging a "volume-only" container, which ensures that your database persists across destruction of the container. To completely destroy your database, remove the `.up.state` file and `docker rm` the `-data` container.
+Currently, `dup` supports MySQL 5.6 and PostgreSQL 9.5, using the official [`mysql`](https://hub.docker.com/_/mysql/) and [`postgres`](https://hub.docker.com/_/postgres/) Docker images. If these images aren't suitable, an alternate database container image can be specified with an `"image"` setting in the `"db"` config section:
 
-The database user that is setup by default under `tutum/mysql` is `admin`, and the password for that user is declared in `.up.json`.
+```json
+{
+    "project": "project-name-here",
+    "db": {
+        "type": "mysql | postgres | mongodb | none",
+        "...": "...",
+        "image": "your/customised-database-image"
+    }
+}
+```
+
+Persistence of your database is handled by leveraging a "volume-only" container, which ensures that your database persists across destruction of the container. To completely destroy your database, `docker container rm` the `-data` container.
+
+The database user that is setup by default for MySQL is `admin`, and the password for that user is declared in `.up.json`.
 
 Alternatively, to not use a database, set the `db` object to:
 
